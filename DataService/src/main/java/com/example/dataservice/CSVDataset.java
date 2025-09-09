@@ -1,3 +1,4 @@
+/*
 package com.example.dataservice;
 
 import jakarta.persistence.Entity;
@@ -5,14 +6,14 @@ import jakarta.persistence.Entity;
 import java.util.Arrays;
 import java.util.Objects;
 
-@Entity
-public class CSVDataset extends Dataset {
+
+public class CSVDataset {
 
     private char delim;
     private boolean header;
 
     public CSVDataset(String name, String description, byte[] content,  char delim, boolean header) {
-        super(name, description, FileFormat.CSV, content);
+        //super(name, description, FileFormat.CSV, content);
         this.delim = delim;
         this.header = header;
     }
@@ -60,3 +61,4 @@ public class CSVDataset extends Dataset {
                 + this.getNumEntries() + ", createdAt=" + this.getCreatedAt() + '}';
     }
 }
+*/

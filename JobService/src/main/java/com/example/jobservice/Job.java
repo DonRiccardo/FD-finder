@@ -39,6 +39,11 @@ public class Job {
         return this.id;
     }
 
+    public void setId(Long id) {
+
+        this.id = id;
+    }
+
     public JobStatus getStatus() {
 
         return this.status;

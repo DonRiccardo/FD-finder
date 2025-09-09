@@ -13,7 +13,7 @@ import java.util.Objects;
 
 
 @Entity
-public abstract class Dataset {
+public class Dataset {
 
     @Id
     @GeneratedValue
@@ -31,11 +31,16 @@ public abstract class Dataset {
 
     private LocalDateTime createdAt;
 
-    public Dataset(String name, String description, FileFormat fileFormat, byte[] content) {
+    private char delim;
+    private boolean header;
+
+    public Dataset(String name, String description, String fileFormat, byte[] content, char delim, boolean header) {
         this.name = name;
         this.description = description;
-        this.fileFormat = fileFormat;
+        setFileFormat(fileFormat);
         this.content = content;
+        this.delim = delim;
+        this.header = header;
     }
 
     public Dataset() {
@@ -48,9 +53,27 @@ public abstract class Dataset {
         this.createdAt = LocalDateTime.now();
     }
 
+    public void setFileFormat(String fileFormat) {
+        fileFormat = fileFormat.toLowerCase().trim();
+        if(fileFormat.contains("csv")) {
+            this.fileFormat = FileFormat.CSV;
+        }
+        else if(fileFormat.contains("json")) {
+            this.fileFormat = FileFormat.JSON;
+        }
+        else {
+            throw new UnsupportedFileFormatException(fileFormat);
+        }
+    }
+
     public Long getId() {
 
         return this.id;
+    }
+
+    public void setId(Long id) {
+
+        this.id = id;
     }
 
     public String getName() {
@@ -58,9 +81,19 @@ public abstract class Dataset {
         return this.name;
     }
 
+    public void setName(String name) {
+
+        this.name = name;
+    }
+
     public String getDescription() {
 
         return this.description;
+    }
+
+    public void setDescription(String description) {
+
+        this.description = description;
     }
 
     public FileFormat getFileFormat() {
@@ -73,6 +106,11 @@ public abstract class Dataset {
         return this.content;
     }
 
+    public void setContent(byte[] content) {
+
+        this.content = content;
+    }
+
     public Long getNumEntries() {
 
         return this.numEntries;
@@ -81,6 +119,26 @@ public abstract class Dataset {
     public int getNumAttributes() {
 
         return this.numAttributtes;
+    }
+
+    public char getDelim() {
+
+        return this.delim;
+    }
+
+    public void setDelim(char delim) {
+
+        this.delim = delim;
+    }
+
+    public boolean getHeader() {
+
+        return this.header;
+    }
+
+    public void setHeader(boolean header) {
+
+        this.header = header;
     }
 
     public LocalDateTime getCreatedAt() {
@@ -100,18 +158,21 @@ public abstract class Dataset {
                 Objects.equals(this.name, dataset.name) &&
                 Objects.equals(this.description, dataset.description) &&
                 Objects.equals(this.fileFormat, dataset.fileFormat) &&
+                Objects.equals(this.delim, dataset.delim) &&
+                Objects.equals(this.header, dataset.header) &&
                 Arrays.equals(this.content, dataset.content);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(this.id, this.name, this.description, this.fileFormat, Arrays.hashCode(this.content));
+        return Objects.hash(this.id, this.name, this.description, this.fileFormat, this.delim, this.header, Arrays.hashCode(this.content));
     }
 
     @Override
     public String toString() {
         return "Dataset{" + "id=" + this.id + ", name='" + this.name + '\'' + ", description='" + this.description
-                + '\'' + ", format=" + this.fileFormat + ", numAttributes=" + this.numAttributtes + ", numEntries="
+                + '\'' + ", format=" + this.fileFormat + ", delimiter='"+ this.delim +'\'' +", header= "+ this.header
+                + ", numAttributes=" + this.numAttributtes + ", numEntries="
                 + this.numEntries + ", createdAt=" + this.createdAt + '}';
     }
 }
