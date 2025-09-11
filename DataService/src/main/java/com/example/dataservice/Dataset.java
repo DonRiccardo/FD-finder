@@ -27,18 +27,17 @@ public class Dataset {
     private int numAttributtes=0;
     private Long numEntries=0L;
 
-    private byte[] content;
-
+    private String fileURL;
     private LocalDateTime createdAt;
 
-    private char delim;
+    private String delim;
     private boolean header;
 
-    public Dataset(String name, String description, String fileFormat, byte[] content, char delim, boolean header) {
+    public Dataset(String name, String description, String fileFormat, String fileURL, String delim, boolean header) {
         this.name = name;
         this.description = description;
         setFileFormat(fileFormat);
-        this.content = content;
+        this.fileURL = fileURL;
         this.delim = delim;
         this.header = header;
     }
@@ -101,14 +100,14 @@ public class Dataset {
         return this.fileFormat;
     }
 
-    public byte[] getContent() {
+    public String getFileURL() {
 
-        return this.content;
+        return this.fileURL;
     }
 
-    public void setContent(byte[] content) {
+    public void setFileURL(String fileURL) {
 
-        this.content = content;
+        this.fileURL = fileURL;
     }
 
     public Long getNumEntries() {
@@ -121,12 +120,12 @@ public class Dataset {
         return this.numAttributtes;
     }
 
-    public char getDelim() {
+    public String getDelim() {
 
         return this.delim;
     }
 
-    public void setDelim(char delim) {
+    public void setDelim(String delim) {
 
         this.delim = delim;
     }
@@ -160,17 +159,18 @@ public class Dataset {
                 Objects.equals(this.fileFormat, dataset.fileFormat) &&
                 Objects.equals(this.delim, dataset.delim) &&
                 Objects.equals(this.header, dataset.header) &&
-                Arrays.equals(this.content, dataset.content);
+                Objects.equals(this.fileURL, dataset.fileURL);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(this.id, this.name, this.description, this.fileFormat, this.delim, this.header, Arrays.hashCode(this.content));
+        return Objects.hash(this.id, this.name, this.description, this.fileFormat, this.delim, this.header, this.fileURL);
     }
 
     @Override
     public String toString() {
-        return "Dataset{" + "id=" + this.id + ", name='" + this.name + '\'' + ", description='" + this.description
+        return "Dataset{" + "id=" + this.id + ", name='" + this.name + '\'' + ", fileURL=" + this.fileURL +
+                ", description='" + this.description
                 + '\'' + ", format=" + this.fileFormat + ", delimiter='"+ this.delim +'\'' +", header= "+ this.header
                 + ", numAttributes=" + this.numAttributtes + ", numEntries="
                 + this.numEntries + ", createdAt=" + this.createdAt + '}';

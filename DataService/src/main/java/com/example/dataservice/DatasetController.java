@@ -14,6 +14,7 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 @RestController
+@RequestMapping("/datasets")
 public class DatasetController {
 
     private final DatasetRepository datasetRepository;
@@ -25,7 +26,7 @@ public class DatasetController {
         this.datasetAssembler = datasetAssembler;
     }
 
-    @PostMapping("/datasets")
+    @PostMapping
     public ResponseEntity<?> newDataset(@Valid @RequestBody Dataset dataset) {
 
         EntityModel<Dataset> entityModel = datasetAssembler.toModel(datasetRepository.save(dataset));
@@ -35,7 +36,7 @@ public class DatasetController {
                 .body(entityModel);
     }
 
-    @GetMapping("/datasets")
+    @GetMapping
     public CollectionModel<EntityModel<Dataset>> all() {
 
         List<EntityModel<Dataset>> datasets = datasetRepository.findAll().stream()
@@ -45,7 +46,7 @@ public class DatasetController {
         return CollectionModel.of(datasets, linkTo(methodOn(DatasetController.class).all()).withSelfRel());
     }
 
-    @GetMapping("/datasets/{id}")
+    @GetMapping("/{id}")
     public EntityModel<Dataset> one(@PathVariable Long id) {
 
         Dataset dataset = datasetRepository.findById(id)
@@ -54,7 +55,7 @@ public class DatasetController {
         return datasetAssembler.toModel(dataset);
     }
 
-    @DeleteMapping("/datasets/{id}/delete")
+    @DeleteMapping("/{id}/delete")
     public ResponseEntity<?> delete(@PathVariable Long id) {
 
         datasetRepository.deleteById(id);
