@@ -1,9 +1,6 @@
 package com.example.dataservice;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.Id;
-import jakarta.persistence.PrePersist;
+import jakarta.persistence.*;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 
@@ -19,6 +16,7 @@ public class Dataset {
     @GeneratedValue
     private Long id;
     @NotEmpty
+    @Column(unique = true)
     private String name;
     private String description;
     @NotNull
@@ -27,19 +25,22 @@ public class Dataset {
     private int numAttributtes=0;
     private Long numEntries=0L;
 
-    private String fileURL;
+    private String originalFilename;
+    private String internalFileName;
+    private String hash;
     private LocalDateTime createdAt;
 
     private String delim;
     private boolean header;
 
-    public Dataset(String name, String description, String fileFormat, String fileURL, String delim, boolean header) {
+    public Dataset(String name, String description, String fileFormat, String originalFilename, String delim, boolean header, String hash) {
         this.name = name;
         this.description = description;
         setFileFormat(fileFormat);
-        this.fileURL = fileURL;
+        this.originalFilename = originalFilename;
         this.delim = delim;
         this.header = header;
+        this.hash = hash;
     }
 
     public Dataset() {
@@ -100,14 +101,14 @@ public class Dataset {
         return this.fileFormat;
     }
 
-    public String getFileURL() {
+    public String getOriginalFilename() {
 
-        return this.fileURL;
+        return this.originalFilename;
     }
 
-    public void setFileURL(String fileURL) {
+    public void setOriginalFilename(String filename) {
 
-        this.fileURL = fileURL;
+        this.originalFilename = filename;
     }
 
     public Long getNumEntries() {
@@ -140,6 +141,16 @@ public class Dataset {
         this.header = header;
     }
 
+    public String getHash() {
+
+        return this.hash;
+    }
+
+    public void setHash(String hash) {
+
+        this.hash = hash;
+    }
+
     public LocalDateTime getCreatedAt() {
 
         return this.createdAt;
@@ -159,17 +170,18 @@ public class Dataset {
                 Objects.equals(this.fileFormat, dataset.fileFormat) &&
                 Objects.equals(this.delim, dataset.delim) &&
                 Objects.equals(this.header, dataset.header) &&
-                Objects.equals(this.fileURL, dataset.fileURL);
+                Objects.equals(this.originalFilename, dataset.originalFilename) &&
+                Objects.equals(this.hash, dataset.hash);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(this.id, this.name, this.description, this.fileFormat, this.delim, this.header, this.fileURL);
+        return Objects.hash(this.id, this.name, this.description, this.fileFormat, this.delim, this.header, this.originalFilename);
     }
 
     @Override
     public String toString() {
-        return "Dataset{" + "id=" + this.id + ", name='" + this.name + '\'' + ", fileURL=" + this.fileURL +
+        return "Dataset{" + "id=" + this.id + ", name='" + this.name + '\'' + ", fileName=" + this.originalFilename +
                 ", description='" + this.description
                 + '\'' + ", format=" + this.fileFormat + ", delimiter='"+ this.delim +'\'' +", header= "+ this.header
                 + ", numAttributes=" + this.numAttributtes + ", numEntries="

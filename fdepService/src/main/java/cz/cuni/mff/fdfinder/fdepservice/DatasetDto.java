@@ -1,7 +1,8 @@
-package com.example.fdepservice;
+package cz.cuni.mff.fdfinder.fdepservice;
 
 import jakarta.persistence.PrePersist;
 
+import java.io.File;
 import java.time.LocalDateTime;
 
 public class DatasetDto {
@@ -9,18 +10,18 @@ public class DatasetDto {
     private Long id;
     private String name;
     private String description;
-    private String fileFormat;
+    private FileFormat fileFormat;
 
     private String fileURL;
 
     private String delim;
     private boolean header;
 
-    public DatasetDto(Long id, String name, String description, String fileFormat, String fileURL, String delim, boolean header) {
+    public DatasetDto(Long id, String name, String description, FileFormat fileFormat, String fileURL, String delim, boolean header) {
         this.id = id;
         this.name = name;
         this.description = description;
-        setFileFormat(fileFormat);
+        this.fileFormat = fileFormat;
         this.fileURL = fileURL;
         this.delim = delim;
         this.header = header;
@@ -30,7 +31,7 @@ public class DatasetDto {
 
     }
 
-    public void setFileFormat(String fileFormat) {
+    public void setFileFormat(FileFormat fileFormat) {
 
         this.fileFormat = fileFormat;
     }
@@ -65,7 +66,7 @@ public class DatasetDto {
         this.description = description;
     }
 
-    public String getFileFormat() {
+    public FileFormat getFileFormat() {
 
         return this.fileFormat;
     }

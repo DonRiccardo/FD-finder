@@ -1,4 +1,4 @@
-package com.example.fdepservice;
+package cz.cuni.mff.fdfinder.fdepservice;
 
 public enum JobStatus {
     CREATED,    // user can START job

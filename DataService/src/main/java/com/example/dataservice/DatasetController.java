@@ -1,12 +1,17 @@
 package com.example.dataservice;
 
 import jakarta.validation.Valid;
+import org.springframework.core.io.Resource;
 import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.IanaLinkRelations;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -19,16 +24,23 @@ public class DatasetController {
 
     private final DatasetRepository datasetRepository;
     private final DatasetModelAssembler datasetAssembler;
+    private final DatasetService datasetService;
 
-    public DatasetController(DatasetRepository datasetRepository,  DatasetModelAssembler datasetAssembler) {
+    public DatasetController(DatasetRepository datasetRepository,  DatasetModelAssembler datasetAssembler, DatasetService datasetService) {
 
         this.datasetRepository = datasetRepository;
         this.datasetAssembler = datasetAssembler;
+        this.datasetService = datasetService;
     }
 
     @PostMapping
-    public ResponseEntity<?> newDataset(@Valid @RequestBody Dataset dataset) {
+    public ResponseEntity<?> newDataset(
+            @Valid @RequestPart("dataset") Dataset dataset,
+            @RequestPart("file") MultipartFile file) {
 
+        DatasetService.FileResponse response = datasetService.uploadFile(file, dataset.getFileFormat());
+        dataset.setHash(response.hash());
+        dataset.setOriginalFilename(response.originalName());
         EntityModel<Dataset> entityModel = datasetAssembler.toModel(datasetRepository.save(dataset));
 
         return ResponseEntity
@@ -53,6 +65,31 @@ public class DatasetController {
                 .orElseThrow(() -> new DatasetNotFoundException(id));
 
         return datasetAssembler.toModel(dataset);
+    }
+
+    @GetMapping("/{id}/file")
+    public ResponseEntity<Resource> downloadFile(@PathVariable Long id) {
+
+        try {
+            Dataset dataset =  datasetRepository.findById(id)
+                    .orElseThrow(() -> new DatasetNotFoundException(id));
+
+            Resource resource = datasetService.getFile(dataset);
+
+            return ResponseEntity
+                .ok()
+                .header(
+                    HttpHeaders.CONTENT_DISPOSITION,
+                    "attachment; filename=\"" + dataset.getOriginalFilename() + "\""
+                )
+                .contentType(MediaType.parseMediaType(dataset.getFileFormat().getContentType()))
+                .body(resource);
+
+        }
+        catch (IOException ex) {
+            return ResponseEntity.internalServerError().build();
+        }
+
     }
 
     @DeleteMapping("/{id}/delete")

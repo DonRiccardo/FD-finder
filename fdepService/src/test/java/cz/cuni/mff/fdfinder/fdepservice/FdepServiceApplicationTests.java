@@ -1,10 +1,10 @@
-package com.example.dataservice;
+package cz.cuni.mff.fdfinder.fdepservice;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest
-class DataServiceApplicationTests {
+class FdepServiceApplicationTests {
 
     @Test
     void contextLoads() {

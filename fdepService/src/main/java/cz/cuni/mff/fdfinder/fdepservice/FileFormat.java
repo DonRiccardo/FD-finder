@@ -1,4 +1,4 @@
-package com.example.dataservice;
+package cz.cuni.mff.fdfinder.fdepservice;
 
 public enum FileFormat {
     CSV ("text/csv"),

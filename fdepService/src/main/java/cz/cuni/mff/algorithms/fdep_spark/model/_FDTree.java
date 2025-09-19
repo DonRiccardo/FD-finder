@@ -1,0 +1,70 @@
+package cz.cuni.mff.algorithms.fdep_spark.model;
+
+import java.io.Serializable;
+import java.util.BitSet;
+
+public class _FDTree extends _FDTreeElement implements Serializable{
+
+    public _FDTree(int maxAttributeNumber) {
+        super(maxAttributeNumber);
+    }
+
+    public void addMostGeneralDependencies() {
+        this.rhsAttributes.set(1, maxAttributeNumber + 1);
+        for (int i = 0; i < maxAttributeNumber; i++) {
+            isfd[i] = true;
+        }
+    }
+
+    public void addFunctionalDependency(BitSet lhs, int a) {
+        _FDTreeElement fdTreeEl;
+        //update root vertex
+        _FDTreeElement currentNode = this;
+        currentNode.addRhsAttribute(a);
+
+        for (int i = lhs.nextSetBit(0); i >= 0; i = lhs.nextSetBit(i + 1)) {
+
+            if (currentNode.children[i - 1] == null) {
+                fdTreeEl = new _FDTreeElement(maxAttributeNumber);
+                currentNode.children[i - 1] = fdTreeEl;
+            }
+            // update vertex to add attribute
+            currentNode = currentNode.getChild(i - 1);
+            currentNode.addRhsAttribute(a);
+        }
+        // mark the last element
+        currentNode.markAsLastVertex(a - 1);
+    }
+
+    public boolean isEmpty() {
+        return (rhsAttributes.cardinality() == 0);
+    }
+
+    /**
+     * @return
+     */
+    public void filterSpecializations() {
+        BitSet activePath = new BitSet();
+        _FDTree filteredTree = new _FDTree(maxAttributeNumber);
+        this.filterSpecializations(filteredTree, activePath);
+
+        this.children = filteredTree.children;
+        this.isfd = filteredTree.isfd;
+
+    }
+
+    public void filterGeneralizations() {
+        BitSet activePath = new BitSet();
+        _FDTree filteredTree = new _FDTree(maxAttributeNumber);
+        this.filterGeneralizations(filteredTree, activePath);
+
+        this.children = filteredTree.children;
+    }
+
+    public void printDependencies() {
+        BitSet activePath = new BitSet();
+        this.printDependencies(activePath);
+
+    }
+
+}
