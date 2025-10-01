@@ -16,6 +16,7 @@ public class DatasetModelAssembler implements RepresentationModelAssembler<Datas
         return EntityModel.of(dataset,
                 linkTo(methodOn(DatasetController.class).one(dataset.getId())).withSelfRel(),
                 linkTo(methodOn(DatasetController.class).all()).withRel("datasets"),
-                linkTo(methodOn(DatasetController.class).delete(dataset.getId())).withRel("delete"));
+                linkTo(methodOn(DatasetController.class).delete(dataset.getId())).withRel("delete"),
+                linkTo(methodOn(DatasetController.class).downloadFile(dataset.getId())).withRel("download"));
     }
 }

@@ -3,10 +3,12 @@ package com.example.dataservice;
 import org.springframework.cloud.client.discovery.DiscoveryClient;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
@@ -19,14 +21,10 @@ import java.security.MessageDigest;
 @Service
 public class DatasetService {
 
-    private final DiscoveryClient discoveryClient;
-    private final RestClient restClient;
     private final String datasetDirectory = "datasets/";
 
-    public DatasetService(DiscoveryClient discoveryClient, RestClient.Builder restClientBuilder) {
+    public DatasetService() {
 
-        this.discoveryClient = discoveryClient;
-        this.restClient = restClientBuilder.build();
     }
 
     public record FileResponse(
@@ -40,13 +38,46 @@ public class DatasetService {
         final String filename = getFilename(file);
         final String hash = computeFileHash(file);
 
-        saveFileData(file, getFilePath(hash, fileFormat, filename));
+        saveFileData(file, getFilePath(hash, fileFormat));
 
         return new FileResponse(hash, filename);
     }
 
+    public record FileNumbers(
+
+            int numAttributes,
+            Long numEntries
+    ) implements Serializable {};
+
+    @Async
+    public FileNumbers processNewDataset(Dataset dataset){
+        int numAttributes = 0;
+        Long numEntries = 0L;
+
+        try{
+            Path filePath = getFilePath(dataset.getHash(), dataset.getFileFormat());
+            try(BufferedReader br = Files.newBufferedReader(filePath)){
+
+                String line = br.readLine();
+                numAttributes = line.split(dataset.getDelim()).length;
+                numEntries = dataset.getHeader() ? 0L : 1L;
+
+                while (line != null){
+                    line = br.readLine();
+                    numEntries++;
+                }
+
+            }
+        }
+        catch (Exception e){
+
+        }
+
+        return new FileNumbers(numAttributes, numEntries);
+    }
+
     public Resource getFile(Dataset dataset) throws IOException {
-        Path path = getFilePath(dataset.getHash(), dataset.getFileFormat(), dataset.getOriginalFilename());
+        Path path = getFilePath(dataset.getHash(), dataset.getFileFormat());
 
         if(!Files.exists(path)) {
             throw new DatasetNotFoundException(dataset.getId());
@@ -56,7 +87,7 @@ public class DatasetService {
 
     }
 
-    private Path getFilePath(String hash, FileFormat fileFormat, String filename) {
+    private Path getFilePath(String hash, FileFormat fileFormat) {
 
         return Paths.get(this.datasetDirectory, fileFormat.toString().toLowerCase(), hash).toAbsolutePath().normalize();
     }

@@ -53,6 +53,12 @@ public class Dataset {
         this.createdAt = LocalDateTime.now();
     }
 
+    @PostPersist
+    public void postPersist() {
+
+
+    }
+
     public void setFileFormat(String fileFormat) {
         fileFormat = fileFormat.toLowerCase().trim();
         if(fileFormat.contains("csv")) {
@@ -116,9 +122,19 @@ public class Dataset {
         return this.numEntries;
     }
 
+    public void setNumEntries(Long numEntries) {
+
+        this.numEntries = numEntries;
+    }
+
     public int getNumAttributes() {
 
         return this.numAttributtes;
+    }
+
+    public void setNumAttributes(int numAttributes) {
+
+        this.numAttributtes = numAttributes;
     }
 
     public String getDelim() {

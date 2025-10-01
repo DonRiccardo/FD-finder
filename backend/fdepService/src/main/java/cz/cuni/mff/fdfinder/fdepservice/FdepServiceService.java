@@ -10,10 +10,7 @@ import org.springframework.web.client.RestClient;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
+import java.nio.file.*;
 import java.util.Queue;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -115,15 +112,25 @@ public class FdepServiceService {
             System.out.println("FDEP - JOB retrieved = file ");
 
             // store DATASET locally
-            Path targetPath = Paths.get("datasets/tmp/job-" + jobId + "." + dataset.getFileFormat().toString().toLowerCase());
-            Files.createDirectories(targetPath.getParent());
+            Path targetPathDataset = Paths.get("tmp/datasets/job-" + jobId + "." + dataset.getFileFormat().toString().toLowerCase());
+            Files.createDirectories(targetPathDataset.getParent());
+
+            Path targetPathResult = Paths.get("tmp/results/job-" + jobId + "-FDs.txt");
+            Files.createDirectories(targetPathResult.getParent());
+            try {
+                Files.createFile(targetPathResult);
+            }
+            catch (FileAlreadyExistsException e){
+
+            }
+
 
             Resource file = response.getBody();
             if (file != null) {
 
                 try (InputStream in = file.getInputStream()) {
 
-                    Files.copy(in, targetPath, StandardCopyOption.REPLACE_EXISTING);
+                    Files.copy(in, targetPathDataset, StandardCopyOption.REPLACE_EXISTING);
                 }
             }
             else {
@@ -139,14 +146,14 @@ public class FdepServiceService {
             // TODO metriky algoritmu
 
             FdepSpark algorithm = new FdepSpark();
-            algorithm.startAlgorithm(targetPath, job.getSkipEntries(), job.getMaxEntries(), job.getMaxLHS(), dataset.getFileFormat(), dataset.getHeader(), dataset.getDelim());
+            algorithm.startAlgorithm(targetPathDataset, job.getSkipEntries(), job.getMaxEntries(), job.getMaxLHS(), dataset.getFileFormat(), dataset.getHeader(), dataset.getDelim());
 
             jobResult.setEndTime(System.currentTimeMillis());
             algorithm = null;
 
             System.out.println("FDEP - JOB Spark finished at TIME: " + jobResult.endTime);
 
-            Files.deleteIfExists(targetPath);
+            Files.deleteIfExists(targetPathDataset);
 
             updateStatus(jobId, JobStatus.DONE, serviceInstanceJob);
         }

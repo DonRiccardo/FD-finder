@@ -36,6 +36,7 @@ export default function DatasetsAll() {
                 const formatted = datasets.map((dataset) => ({
                     ...dataset,
                     canDelete: Boolean(dataset._links?.delete),
+                    canDownload: Boolean(dataset._links?.download),
                     createdAt: dataset.createdAt ? new Date(dataset.createdAt.replace(/(\.\d{3})\d+/, "$1")) : null,
                 }));
 
@@ -80,7 +81,7 @@ export default function DatasetsAll() {
         */
        {
         field: "actions",
-        headerName: "Actions",
+        headerName: "",
         minWidth: 180,
         renderCell: (params) => (
             <>
@@ -98,7 +99,7 @@ export default function DatasetsAll() {
                     </IconButton>
                     </Tooltip>
                 </Link>
-                <Tooltip title={params.row.canDelete ? "Download Dataset" : "Download Disabled"}>
+                <Tooltip title={params.row.canDownload ? "Download Dataset" : "Download Disabled"}>
                 <IconButton 
                     aria-label="download"
                     variant="outlined" 
@@ -136,7 +137,6 @@ export default function DatasetsAll() {
                 })
                 .then((response) => {
                     if (response.ok) {
-                        alert(`Dataset "${row.name}" deleted successfully.`);
                         fetchDatasets(); // Refresh the dataset list
                     } else {
                         alert(`Failed to delete dataset "${row.name}".`);
@@ -150,7 +150,46 @@ export default function DatasetsAll() {
             }
         }
     }
+
     const handleDownload = (row) => {
+        if (row.canDownload) {
+            fetch(row._links.download.href, {
+                method: 'GET',
+            })
+            .then((response) => {
+                if (response.ok) {
+                    return response;
+                }
+                else {
+                    throw new Error("Network response was not ok");
+                }   
+            })
+            .then((response) => {
+                console.log("Response:", response);
+                const disposition = response.headers.get("Content-Disposition");
+                let filename = "dataset_" + row.id;
+
+                if (disposition && disposition.indexOf("filename") !== -1) {
+                    filename = disposition.split("filename=")[1].replace(/"/g, "").trim();
+
+                const url = window.URL.createObjectURL(new Blob([response.blob]));
+                const link = document.createElement('a');
+
+                link.href = url;
+                link.download = filename; // použije meno zo servera
+                document.body.appendChild(link);
+                link.click();
+                link.remove();
+
+                // upratanie
+                window.URL.revokeObjectURL(url);
+                }
+            })
+            .catch((error) => {
+                console.error("Error downloading dataset:", error);
+                alert(`Error downloading dataset "${row.name}".`);
+            });
+        }       
     }
 
 
@@ -184,10 +223,7 @@ export default function DatasetsAll() {
 
 function EditToolbar() {
   return (
-    <Toolbar>
-        <Typography fontWeight="medium" sx={{ flex: 1, mx: 0.5 }}>
-            Toolbar
-        </Typography>
+    <Toolbar>        
         <Link to={"/datasets/upload"}>
             <Button color="secondary" variant="outlined" startIcon={<AddIcon />}>
                 Add Dataset

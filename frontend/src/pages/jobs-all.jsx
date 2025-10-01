@@ -159,13 +159,13 @@ export default function JobssAll() {
                     </Tooltip>
                 </Link>
                 <Link to={"/jobs"}>
-                    <Tooltip title="???">
+                    <Tooltip title="Show details & results  ">
                     <IconButton variant="outlined" size="small" sx={{ mr: 1 }} aria-label="create job">
                         <FindInPageIcon />
                     </IconButton>
                     </Tooltip>
                 </Link>
-                <Tooltip title={params.row.canDelete ? "??? " : "???"}>
+                <Tooltip title={params.row.canDelete ? "Download found FDs " : "There are no results to download"}>
                 <IconButton 
                     aria-label="download"
                     variant="outlined" 
@@ -254,9 +254,6 @@ export default function JobssAll() {
 function EditToolbar() {
   return (
     <Toolbar>
-        <Typography fontWeight="medium" sx={{ flex: 1, mx: 0.5 }}>
-            Toolbar
-        </Typography>
         <Link to={"/jobs/create"}>
             <Button color="secondary" variant="outlined" startIcon={<AddIcon />}>
                 Add Job

@@ -15,6 +15,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -91,6 +92,7 @@ public class JobController {
 
     @DeleteMapping("/{id}/delete")
     public ResponseEntity<?> delete(@PathVariable Long id) {
+
         Job job = jobRepository.findById(id)
                 .orElseThrow(() -> new JobNotFoundException(id));
 
@@ -127,6 +129,15 @@ public class JobController {
                 .body(Problem.create()
                         .withTitle("Method Not Allowed")
                         .withDetail("You are not allowed to start the job in state: "+job.getStatus().toString()));
+    }
+
+    @PostMapping("/{id}/result")
+    public ResponseEntity<?> result(
+            @PathVariable Long id,
+            @Valid @RequestPart("jobresult") JobResult jobResult,
+            @RequestPart("file") MultipartFile file){
+
+
     }
 
     @PatchMapping("/{id}/status")

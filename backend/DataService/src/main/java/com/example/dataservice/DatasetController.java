@@ -56,6 +56,11 @@ public class DatasetController {
         dataset.setHash(response.hash());
         dataset.setOriginalFilename(response.originalName());
         dataset.setSize(file.getSize());
+
+        DatasetService.FileNumbers fn = datasetService.processNewDataset(dataset);
+        dataset.setNumAttributes(fn.numAttributes());
+        dataset.setNumEntries(fn.numEntries());
+
         EntityModel<Dataset> entityModel = datasetAssembler.toModel(datasetRepository.save(dataset));
 
         return ResponseEntity
@@ -97,6 +102,7 @@ public class DatasetController {
                     HttpHeaders.CONTENT_DISPOSITION,
                     "attachment; filename=\"" + dataset.getOriginalFilename() + "\""
                 )
+                .header(HttpHeaders.ACCESS_CONTROL_EXPOSE_HEADERS, HttpHeaders.CONTENT_DISPOSITION)
                 .contentType(MediaType.parseMediaType(dataset.getFileFormat().getContentType()))
                 .body(resource);
 

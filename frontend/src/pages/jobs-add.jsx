@@ -27,7 +27,7 @@ export default function JobsCreate() {
 
     const [algorithm, setAlgorithm] = useState("");
     const [dataset, setDataset] = useState("");
-    const [maxEntries, setMaxEntries] = useState(0);
+    const [limitEntries, setLimitEntries] = useState(0);
     const [skipEntries, setSkipEntries] = useState(0);
     const [maxLhs, setMaxLhs] = useState(0);
     const [output, setOutput] = useState("");
@@ -51,13 +51,11 @@ export default function JobsCreate() {
                 setAvailableDatasets(datasets.map((dataset) => ({
                     id: dataset.id,
                     name: dataset.name,
-                })));
-
-                
+                })));                
 
             } 
             catch (error) {
-
+                
             }
             finally {
                 setLoading(false);
@@ -73,7 +71,7 @@ export default function JobsCreate() {
         const jobData = {
             algorithm: algorithm,
             dataset: dataset,
-            maxEntries: maxEntries,
+            limitEntries: limitEntries,
             skipEntries: skipEntries,
             maxLHS: maxLhs,
             output: output,
@@ -107,7 +105,7 @@ export default function JobsCreate() {
         <Box 
             sx={{
                     width: "50%",
-                    margin: "auto auto",
+                    margin: "auto auto 15px auto",
                     padding: "1%",
                     border: "1px solid black",
                     borderRadius: "16px",
@@ -128,7 +126,7 @@ export default function JobsCreate() {
                     <Select
                         labelId="algorithm-label"
                         value={algorithm}
-                        label="Algorithm"
+                        //label="Algorithm"
                         onChange={(e) => setAlgorithm(e.target.value)}                        
                     >
                         {availableAlgorithms.map((alg) => ( 
@@ -150,10 +148,10 @@ export default function JobsCreate() {
                     </Select>
                 </FormControl>
                 <TextField
-                    label="Max Entries"
+                    label="Limit Entries"
                     type="number"
-                    value={maxEntries}
-                    onChange={(e) => setMaxEntries(parseInt(e.target.value, 10))}
+                    value={limitEntries}
+                    onChange={(e) => setLimitEntries(parseInt(e.target.value, 10))}
                     size="small"
                     />
                 <TextField
@@ -188,22 +186,4 @@ export default function JobsCreate() {
 }
 
 
-
-function HelpTooltip(props) {
-  const IconTooltip = () => {
-    return (
-      <Tooltip title={props.title}>
-        <IconButton>
-          <HelpOutlineIcon />
-        </IconButton>
-      </Tooltip>
-    );
-  };
-
-  if (props.adorned) {
-    return <InputAdornment position="end">{IconTooltip()}</InputAdornment>;
-  } else {
-    return IconTooltip();
-  }
-}
 
