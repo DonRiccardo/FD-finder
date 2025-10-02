@@ -8,6 +8,7 @@ import DatasetsAddPage from './pages/datasets-add';
 import DatasetsAll from './pages/datasets-all';
 import JobsAll from './pages/jobs-all';
 import JobsCreate from './pages/jobs-add';
+import JobsResults from './pages/jobs-results';
 
 function App() {
   
@@ -23,6 +24,7 @@ function App() {
             <Route path="/datasets/upload" element={<DatasetsAdd />} />
             <Route path="/jobs" element={<Jobs />} />
             <Route path="/jobs/create" element={<JobsAdd />} />
+            <Route path="/jobs/results" element={<JobResult />} />
           </Routes>
         </Box>
     </>
@@ -105,6 +107,17 @@ function JobsAdd() {
       </main>
     </>
   ) 
+}
+
+function JobResult() {
+  return(
+    <>
+      <main>
+        <h1>Job Results</h1>
+        <JobsResults />
+      </main>
+    </>
+  )
 }
 
 export default App

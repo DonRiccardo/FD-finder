@@ -5,12 +5,14 @@
 package cz.cuni.mff.algorithms.fdep_spark;
 
 import cz.cuni.mff.algorithms.fdep_spark.model._CSVTestCase;
+import cz.cuni.mff.algorithms.fdep_spark.model._FunctionalDependency;
 import cz.cuni.mff.fdfinder.fdepservice.FileFormat;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.sql.SparkSession;
 
 import java.nio.file.Path;
+import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -27,7 +29,7 @@ public class FdepSpark {
     private static JavaSparkContext context = null;
     private static SparkSession spark = null;
     
-    public void startAlgorithm(Path filePath, int skip, int limit, int maxLhs, FileFormat fileFormat, boolean header, String delim) {
+    public List<_FunctionalDependency> startAlgorithm(Path filePath, String tableName, int skip, int limit, int maxLhs, FileFormat fileFormat, boolean header, String delim) {
 
         try {
 
@@ -51,7 +53,7 @@ public class FdepSpark {
                     delim = ",";
                 }
 
-                 input = new _CSVTestCase(filePath.toString(), header, delim, skip, limit, spark);
+                 input = new _CSVTestCase(filePath.toString(), tableName, header, delim, skip, limit, spark);
                 System.out.println("SPARK starting to create _CSV_INPUT");
             }
             else {
@@ -75,10 +77,14 @@ public class FdepSpark {
             spark.stop();
             context.stop();
 
+            return input.getFoundFds();
+
         } catch (Exception ex) {
             spark.stop();
             context.stop();
             Logger.getLogger(FdepSpark.class.getName()).log(Level.SEVERE, "Something went wrong.", ex);
         }
+
+        return null;
     }
 }

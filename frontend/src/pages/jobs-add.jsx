@@ -26,7 +26,7 @@ export default function JobsCreate() {
     const [loading, setLoading] = useState(true);
 
     const [algorithm, setAlgorithm] = useState("");
-    const [dataset, setDataset] = useState("");
+    const [dataset, setDataset] = useState({id: "", name: "", entries: 0});
     const [limitEntries, setLimitEntries] = useState(0);
     const [skipEntries, setSkipEntries] = useState(0);
     const [maxLhs, setMaxLhs] = useState(0);
@@ -51,6 +51,7 @@ export default function JobsCreate() {
                 setAvailableDatasets(datasets.map((dataset) => ({
                     id: dataset.id,
                     name: dataset.name,
+                    entries: dataset.numEntries,
                 })));                
 
             } 
@@ -70,7 +71,8 @@ export default function JobsCreate() {
 
         const jobData = {
             algorithm: algorithm,
-            dataset: dataset,
+            dataset: dataset.id,
+            datasetName: dataset.name,
             limitEntries: limitEntries,
             skipEntries: skipEntries,
             maxLHS: maxLhs,
@@ -100,6 +102,15 @@ export default function JobsCreate() {
         }
 
     }
+
+    const resetForm = () => {
+        setAlgorithm("");
+        setDataset({id: "", name: "", entries: 0});
+        setLimitEntries(0);
+        setSkipEntries(0);
+        setMaxLhs(0);
+        setOutput("");
+    }
     
     return (
         <Box 
@@ -117,6 +128,7 @@ export default function JobsCreate() {
             <Stack 
                 component="form"
                 onSubmit={(event) => handleSubmit(event)}
+                onReset={() => resetForm()}
                 spacing={3}
                 justifyContent="center"
                 alignItems="center"
@@ -126,7 +138,7 @@ export default function JobsCreate() {
                     <Select
                         labelId="algorithm-label"
                         value={algorithm}
-                        //label="Algorithm"
+                        label="Algorithm"
                         onChange={(e) => setAlgorithm(e.target.value)}                        
                     >
                         {availableAlgorithms.map((alg) => ( 
@@ -143,16 +155,18 @@ export default function JobsCreate() {
                         onChange={(e) => setDataset(e.target.value)}
                     >
                         {availableDatasets.map((ds) => (    
-                            <MenuItem key={ds.id} value={ds.id}>{ds.name}</MenuItem>
+                            <MenuItem key={ds.id} value={ds}>{ds.name}</MenuItem>
                         ))}
                     </Select>
                 </FormControl>
                 <TextField
                     label="Limit Entries"
-                    type="number"
+                    type="number"                    
                     value={limitEntries}
                     onChange={(e) => setLimitEntries(parseInt(e.target.value, 10))}
                     size="small"
+                    error = {limitEntries < 0 || limitEntries > dataset.entries}
+                    helperText = {limitEntries < 0 || limitEntries > dataset.entries ? `Must be between 0 and ${dataset.entries}` : ""}
                     />
                 <TextField
                     label="Skip Entries"
@@ -160,6 +174,8 @@ export default function JobsCreate() {
                     value={skipEntries}
                     onChange={(e) => setSkipEntries(parseInt(e.target.value, 10))}
                     size="small"
+                    error = {skipEntries < 0 || skipEntries > dataset.entries}
+                    helperText = {skipEntries < 0 || skipEntries > dataset.entries ? `Must be between 0 and ${dataset.entries}` : ""}
                     />  
                 <TextField
                     label="Max LHS"
@@ -167,6 +183,8 @@ export default function JobsCreate() {
                     value={maxLhs}
                     onChange={(e) => setMaxLhs(parseInt(e.target.value, 10))}
                     size="small"
+                    error = {maxLhs < 0 }
+                    helperText = {maxLhs < 0 ? "Must be non-negative" : ""}
                     />  
                 <TextField
                     label="Output"
@@ -175,7 +193,11 @@ export default function JobsCreate() {
                     onChange={(e) => setOutput(e.target.value)}
                     size="small"    
                     />
-                <Button type="submit" variant="contained">Create Job</Button>
+                
+                <Stack spacing={5} direction="row">
+                    <Button type="submit" variant="contained">Create Job</Button>
+                    <Button type="reset" variant="outlined" >Cancel</Button>
+                </Stack>
             </Stack>
         
         </div>

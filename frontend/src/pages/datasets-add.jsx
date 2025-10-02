@@ -66,7 +66,7 @@ export default function DatasetsAddPage(){
 
     React.useEffect(() => {
         
-        setIsNameUnique(!datasetNames.includes(fileName));
+        setIsNameUnique(!datasetNames.includes(fileName.trim()));
 
     }, [fileName, datasetNames]);
 
@@ -79,6 +79,10 @@ export default function DatasetsAddPage(){
         setDelim("");
         setHasHeader(false);
         setPreview([]);
+    }
+
+    const isFileNameValid = () => {
+        return fileName && isNameUnique;
     }
 
     const handleFileInputChange = (event) => {  
@@ -173,7 +177,6 @@ export default function DatasetsAddPage(){
         });
     }
 
-
     return (
         <>
             {submitted && <Navigate to="/datasets" replace={true} />}
@@ -194,6 +197,7 @@ export default function DatasetsAddPage(){
             <Stack
                 component="form"
                 onSubmit={(event) => handleSubmit(event)}
+                onReset={() => resetForm()}
                 spacing={3}
                 justifyContent="center"
                 alignItems="center"
@@ -223,6 +227,8 @@ export default function DatasetsAddPage(){
                     value={fileName}
                     onChange={(e) => setFileName(e.target.value)}
                     required
+                    error={!isNameUnique}
+                    helperText={!isNameUnique ? "File name must be unique" : ""}
                     slotProps={{
                         input: {
                         endAdornment: fileName.length > 0 ? (
@@ -311,9 +317,12 @@ export default function DatasetsAddPage(){
                     </Tooltip>
                 </Stack>
             )}
-            <Button variant="outlined" type="submit">
-            {datasetId ? "Update" : "Submit"}
-            </Button>
+            <Stack spacing={5} direction="row">
+                <Button variant="contained" type="submit">
+                {datasetId ? "Update" : "Submit"}
+                </Button>
+                <Button type="reset" variant="outlined" >Cancel</Button>
+            </Stack>
             </Stack>
             </Box>
 

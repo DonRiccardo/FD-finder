@@ -1,15 +1,12 @@
 package com.example.dataservice;
 
-import org.springframework.cloud.client.discovery.DiscoveryClient;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestClient;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
 import java.nio.charset.StandardCharsets;
@@ -17,6 +14,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.MessageDigest;
+import java.util.concurrent.CompletableFuture;
 
 @Service
 public class DatasetService {
@@ -50,9 +48,9 @@ public class DatasetService {
     ) implements Serializable {};
 
     @Async
-    public FileNumbers processNewDataset(Dataset dataset){
+    public CompletableFuture<FileNumbers> processNewCSVDataset(Dataset dataset){
         int numAttributes = 0;
-        Long numEntries = 0L;
+        long numEntries = 0L;
 
         try{
             Path filePath = getFilePath(dataset.getHash(), dataset.getFileFormat());
@@ -62,8 +60,7 @@ public class DatasetService {
                 numAttributes = line.split(dataset.getDelim()).length;
                 numEntries = dataset.getHeader() ? 0L : 1L;
 
-                while (line != null){
-                    line = br.readLine();
+                while ((line = br.readLine()) != null){
                     numEntries++;
                 }
 
@@ -73,7 +70,7 @@ public class DatasetService {
 
         }
 
-        return new FileNumbers(numAttributes, numEntries);
+        return CompletableFuture.completedFuture(new FileNumbers(numAttributes, numEntries));
     }
 
     public Resource getFile(Dataset dataset) throws IOException {

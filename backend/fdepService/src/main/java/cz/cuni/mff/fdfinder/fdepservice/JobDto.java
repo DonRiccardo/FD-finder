@@ -8,20 +8,20 @@ public class JobDto {
     private String status;
     private String algorithm;
     private Long dataset;
-    private int maxEntries;
+    private int limitEntries;
     private int skipEntries;
     private int maxLHS;
     private String output;
 
     public JobDto() {}
 
-    public JobDto(Long id, String algorithm, Long dataset, String status, int maxEntries, int skipEntries, int maxLHS, String output) {
+    public JobDto(Long id, String algorithm, Long dataset, String status, int limitEntries, int skipEntries, int maxLHS, String output) {
 
         this.id = id;
         this.algorithm = algorithm;
         this.dataset = dataset;
         this.status = status;
-        this.maxEntries = maxEntries;
+        this.limitEntries = limitEntries;
         this.skipEntries = skipEntries;
         this.maxLHS = maxLHS;
         this.output = output;
@@ -67,14 +67,14 @@ public class JobDto {
         this.dataset = dataset;
     }
 
-    public int getMaxEntries() {
+    public int getLimitEntries() {
 
-        return this.maxEntries;
+        return this.limitEntries;
     }
 
-    public void setMaxEntries(int maxEntries) {
+    public void setLimitEntries(int limitEntries) {
 
-        this.maxEntries = maxEntries;
+        this.limitEntries = limitEntries;
     }
 
     public int getSkipEntries() {

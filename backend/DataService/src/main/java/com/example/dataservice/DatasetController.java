@@ -16,6 +16,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
@@ -57,9 +58,16 @@ public class DatasetController {
         dataset.setOriginalFilename(response.originalName());
         dataset.setSize(file.getSize());
 
-        DatasetService.FileNumbers fn = datasetService.processNewDataset(dataset);
-        dataset.setNumAttributes(fn.numAttributes());
-        dataset.setNumEntries(fn.numEntries());
+        CompletableFuture<DatasetService.FileNumbers> fn = datasetService.processNewCSVDataset(dataset);
+        try{
+            dataset.setNumAttributes(fn.get().numAttributes());
+            dataset.setNumEntries(fn.get().numEntries());
+        }
+        catch (Exception e){
+            dataset.setNumAttributes(0);
+            dataset.setNumEntries(0L);
+        }
+
 
         EntityModel<Dataset> entityModel = datasetAssembler.toModel(datasetRepository.save(dataset));
 

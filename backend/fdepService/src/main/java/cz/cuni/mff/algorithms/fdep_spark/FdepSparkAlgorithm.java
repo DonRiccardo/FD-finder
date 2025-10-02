@@ -340,9 +340,10 @@ public class FdepSparkAlgorithm implements Serializable{
                 
                 _ColumnCombination colCombination = new _ColumnCombination(columns);
                 _FunctionalDependency fdResult = new _FunctionalDependency(colCombination, columnIdentifiers.get(attr - 1));
-				System.out.println(fdResult.toString());
-                                //this.input.addToResultFile(fdResult);
+				//System.out.println(fdResult.toString());
+
                 // TODO zapis vysledkov do listu?
+                input.receiveResult(fdResult);
 
                 //fdResultReceiver.receiveResult(fdResult);
             }

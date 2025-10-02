@@ -1,8 +1,10 @@
 package com.example.jobservice;
 
+import jakarta.persistence.Entity;
 import jakarta.validation.Valid;
 import org.springframework.cloud.client.ServiceInstance;
 import org.springframework.cloud.client.discovery.DiscoveryClient;
+import org.springframework.core.io.Resource;
 import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.IanaLinkRelations;
@@ -14,9 +16,9 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestClient;
-import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -28,14 +30,20 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 @RequestMapping("/jobs")
 public class JobController {
 
+    private final JobService jobService;
     private final JobRepository jobRepository;
+    private final JobResultsRepository jobResultsRepository;
     private final JobModelAssembler jobAssembler;
+    private final JobResultsModelAssembler jobResultsAssembler;
     private final DiscoveryClient discoveryClient;
     private final RestClient  restClient;
 
-    public JobController(JobRepository jobRepository,  JobModelAssembler jobAssembler,  DiscoveryClient discoveryClient, RestClient.Builder restClientBuilder) {
+    public JobController(JobService jobService , JobRepository jobRepository, JobResultsRepository jobResultsRepository,  JobModelAssembler jobAssembler, JobResultsModelAssembler jobResultsAssembler , DiscoveryClient discoveryClient, RestClient.Builder restClientBuilder) {
+        this.jobService = jobService;
         this.jobRepository = jobRepository;
+        this.jobResultsRepository = jobResultsRepository;
         this.jobAssembler = jobAssembler;
+        this.jobResultsAssembler = jobResultsAssembler;
         this.discoveryClient = discoveryClient;
         this.restClient = restClientBuilder.build();
     }
@@ -131,13 +139,48 @@ public class JobController {
                         .withDetail("You are not allowed to start the job in state: "+job.getStatus().toString()));
     }
 
-    @PostMapping("/{id}/result")
-    public ResponseEntity<?> result(
+    @PostMapping("/{id}/results")
+    public ResponseEntity<?> results(
             @PathVariable Long id,
             @Valid @RequestPart("jobresult") JobResult jobResult,
             @RequestPart("file") MultipartFile file){
 
+        jobResultsRepository.save(jobResult);
+        jobService.uploadFile(id, file);
 
+        return ResponseEntity
+                .ok().build();
+    }
+
+    @GetMapping("/{id}/results")
+    public EntityModel<JobResult> results(@PathVariable Long id){
+
+        JobResult jobResult = jobResultsRepository.findById(id)
+                .orElseThrow(() -> new ResultsNotFoundException(id));
+
+        return jobResultsAssembler.toModel(jobResult);
+
+    }
+
+    @GetMapping("/{id}/results/fds")
+    public ResponseEntity<?> resultsFds(@PathVariable Long id){
+        try {
+            Resource resource = jobService.getFile(id);
+
+            return ResponseEntity
+                    .ok()
+                    .header(
+                            HttpHeaders.CONTENT_DISPOSITION,
+                            "attachment; filename=\"" + jobService.getResultsFileName(id) + "\""
+                    )
+                    .header(HttpHeaders.ACCESS_CONTROL_EXPOSE_HEADERS, HttpHeaders.CONTENT_DISPOSITION)
+                    .contentType(MediaType.parseMediaType("text/plain"))
+                    .body(resource);
+
+        }
+        catch (IOException ex) {
+            return ResponseEntity.internalServerError().build();
+        }
     }
 
     @PatchMapping("/{id}/status")

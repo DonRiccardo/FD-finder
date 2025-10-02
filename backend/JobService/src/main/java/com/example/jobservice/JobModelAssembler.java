@@ -26,6 +26,10 @@ public class JobModelAssembler implements RepresentationModelAssembler<Job, Enti
             entityModel.add(linkTo(methodOn(JobController.class).start(job.getId())).withRel("start"));
             entityModel.add(linkTo(methodOn(JobController.class).delete(job.getId())).withRel("delete"));
         }
+        else if(job.getStatus() == JobStatus.DONE){
+            entityModel.add(linkTo(methodOn(JobController.class).results(job.getId())).withRel("results"));
+            entityModel.add(linkTo(methodOn(JobController.class).delete(job.getId())).withRel("delete"));
+        }
 
         return entityModel;
     }

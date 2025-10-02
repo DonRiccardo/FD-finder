@@ -165,7 +165,7 @@ export default function DatasetsAll() {
                 }   
             })
             .then((response) => {
-                console.log("Response:", response);
+                
                 const disposition = response.headers.get("Content-Disposition");
                 let filename = "dataset_" + row.id;
 
@@ -181,7 +181,6 @@ export default function DatasetsAll() {
                 link.click();
                 link.remove();
 
-                // upratanie
                 window.URL.revokeObjectURL(url);
                 }
             })

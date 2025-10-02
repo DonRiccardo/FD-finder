@@ -19,6 +19,8 @@ public class Job {
     private String algorithm;
     @NotEmpty
     private Long dataset;
+    @NotEmpty
+    private String datasetName;
     @PositiveOrZero
     private int limitEntries;
     @PositiveOrZero
@@ -32,10 +34,11 @@ public class Job {
 
     public Job() {}
 
-    public Job(String algorithm, Long dataset, int limitEntries, int skipEntries, int maxLHS, String output) {
+    public Job(String algorithm, Long dataset, String datasetName, int limitEntries, int skipEntries, int maxLHS, String output) {
 
         this.algorithm = algorithm;
         this.dataset = dataset;
+        this.datasetName = datasetName;
         this.limitEntries = limitEntries;
         this.skipEntries = skipEntries;
         this.maxLHS = maxLHS;
@@ -104,6 +107,16 @@ public class Job {
     public void setDataset(Long dataset) {
 
         this.dataset = dataset;
+    }
+
+    public void setDatasetName(String datasetName) {
+
+        this.datasetName = datasetName;
+    }
+
+    public String getDatasetName() {
+
+        return this.datasetName;
     }
 
     public int getLimitEntries() {

@@ -42,6 +42,7 @@ export default function JobssAll() {
                     canDelete: Boolean(job._links?.delete),
                     canCancel: Boolean(job._links?.cancel),
                     canRun: Boolean(job._links?.start),
+                    canShowResults: Boolean(job._links?.results),
                     createdAt: job.createdAt ? new Date(job.createdAt.replace(/(\.\d{3})\d+/, "$1")) : null,
                     updatedAt: job.updatedAt ? new Date(job.updatedAt.replace(/(\.\d{3})\d+/, "$1")) : null,
                 }));
@@ -130,8 +131,9 @@ export default function JobssAll() {
         { field: "id", headerName: "ID", minWidth: 5, type: "number" },
         { field: "algorithm", headerName: "Algorithm", minWidth: 20 },
         { field: "dataset", headerName: "Dataset ID", minWidth: 10, type: "number" },
+        { field: "datasetName", headerName: "Dataset Name", minWidth: 150 },
         { field: "status", headerName: "Status", minWidth: 40 },    
-        { field: "maxEntries", headerName: "MAX REC", minWidth: 50, type: "number" },
+        { field: "limitEntries", headerName: "MAX REC", minWidth: 50, type: "number" },
         { field: "skipEntries", headerName: "SKIP REC", minWidth: 50, type: "number" },
         { field: "maxLHS", headerName: "MAX LHS", minWidth: 10, type: "number" },
         { field: "output", headerName: "Output", minWidth: 10 },
@@ -159,9 +161,13 @@ export default function JobssAll() {
                     </Tooltip>
                 </Link>
                 <Link to={"/jobs"}>
-                    <Tooltip title="Show details & results  ">
+                    <Tooltip title={params.row.canShowResults ? "Show details & results  " : "No results to show"}>
                     <IconButton variant="outlined" size="small" sx={{ mr: 1 }} aria-label="create job">
-                        <FindInPageIcon />
+                        <FindInPageIcon 
+                            aria-label="show results"
+                            disabled={params.row.canShowResults}
+                            onClick={() => {}}
+                        />
                     </IconButton>
                     </Tooltip>
                 </Link>
@@ -171,7 +177,7 @@ export default function JobssAll() {
                     variant="outlined" 
                     size="small"
                     sx={{ mr: 1 }}
-                    disabled={!params.row.canDelete}    // TODO zmenit na canDownload
+                    disabled={params.row.canDelete}    // TODO zmenit na canDownload
                     onClick={() => handleDownload(params.row)}
                 >
                     <DownloadIcon />
@@ -184,7 +190,7 @@ export default function JobssAll() {
                     size="small"
                     color="error"
                     sx={{ mr: 1 }}
-                    disabled={!params.row.canDelete}
+                    disabled={params.row.canDelete}
                     onClick={() => handleDelete(params.row)}
                 >
                     <DeleteIcon />

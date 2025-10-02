@@ -5,6 +5,7 @@
 package cz.cuni.mff.algorithms.fdep_spark.model;
 
 import com.google.common.collect.ImmutableList;
+import it.unimi.dsi.fastutil.ints.IntList;
 import org.apache.spark.api.java.function.MapFunction;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Encoders;
@@ -32,6 +33,7 @@ public class _CSVTestCase implements Serializable{
 
     private boolean hasHeader;
     private String fileName;
+    private String tableName;
 
     private int numberOfColumns;
     private long numberOfRows;
@@ -40,12 +42,15 @@ public class _CSVTestCase implements Serializable{
     private int skip;
     private int limit;
 
+    private List<_FunctionalDependency> foundFds;
 
-    public _CSVTestCase(String filePath, boolean hasHeader, String delim, int skip, int limit, SparkSession spark) throws IOException {
+
+    public _CSVTestCase(String filePath, String tableName, boolean hasHeader, String delim, int skip, int limit, SparkSession spark) throws IOException {
 
         this.filePath = filePath;
         Path p = Paths.get(this.filePath);
         this.fileName = p.getFileName().toString();
+        this.tableName = tableName;
         this.hasHeader = hasHeader;
         this.delimiter = delim;
         this.skip = skip;
@@ -59,6 +64,7 @@ public class _CSVTestCase implements Serializable{
 
         this.calcNumbers();
         this.getNames();
+        this.foundFds = new LinkedList<>();
         
         //this.createOutputFile();
         
@@ -143,7 +149,7 @@ public class _CSVTestCase implements Serializable{
             
             for (int i = 0; i < this.numberOfColumns; i++) {
 
-                builder.add(this.fileName + ":" + i);
+                builder.add(this.tableName + ":" + i);
             }
         }
         this.names = builder.build();
@@ -189,23 +195,27 @@ public class _CSVTestCase implements Serializable{
 
     public String relationName() {
 
-        return this.fileName;
+        return this.tableName;
     }
 
     public _CSVTestCase generateNewCopy() throws Exception {
 
         return this;
     }
-/*
+
+
     public void receiveResult(_FunctionalDependency fd) {
 
+        foundFds.add(fd);
         // System.out.println(fd.getDeterminant() + "-->" + fd.getDependant());
     }
 
-    public Boolean acceptedResult(_FunctionalDependency result) {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+    public List<_FunctionalDependency> getFoundFds(){
+
+        return foundFds;
     }
-*/
+
+
     /*
     private void createOutputFile(){
         try {
