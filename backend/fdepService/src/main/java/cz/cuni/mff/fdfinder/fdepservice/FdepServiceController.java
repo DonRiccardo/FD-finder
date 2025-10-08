@@ -15,9 +15,9 @@ public class FdepServiceController {
     }
 
     @PostMapping("/start/{id}")
-    public ResponseEntity<?> start(@PathVariable Long id) {
+    public ResponseEntity<?> start(@PathVariable Long id, @RequestBody JobDto job) {
 
-        fdepServiceService.registerNewJob(id);
+        fdepServiceService.registerNewJob(job);
 
         return ResponseEntity.ok().build();
     }

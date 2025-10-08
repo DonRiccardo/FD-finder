@@ -100,29 +100,33 @@ export default function DatasetsAll() {
                     </Tooltip>
                 </Link>
                 <Tooltip title={params.row.canDownload ? "Download Dataset" : "Download Disabled"}>
-                <IconButton 
-                    aria-label="download"
-                    variant="outlined" 
-                    size="small"
-                    sx={{ mr: 1 }}
-                    disabled={!params.row.canDelete}    // TODO zmenit na canDownload
-                    onClick={() => handleDownload(params.row)}
-                >
-                    <DownloadIcon />
-                </IconButton>
+                    <span>
+                    <IconButton 
+                        aria-label="download"
+                        variant="outlined" 
+                        size="small"
+                        sx={{ mr: 1 }}
+                        disabled={!params.row.canDelete}    // TODO zmenit na canDownload
+                        onClick={() => handleDownload(params.row)}
+                    >
+                        <DownloadIcon />
+                    </IconButton>
+                    </span>                
                 </Tooltip>
                 <Tooltip title={params.row.canDelete ? "Delete Dataset" : "Delete Disabled"}>
-                <IconButton 
-                    aria-label="delete"
-                    variant="outlined" 
-                    size="small"
-                    color="error"
-                    sx={{ mr: 1 }}
-                    disabled={!params.row.canDelete}
-                    onClick={() => handleDelete(params.row)}
-                >
-                    <DeleteIcon />
-                </IconButton>
+                    <span>
+                    <IconButton 
+                        aria-label="delete"
+                        variant="outlined" 
+                        size="small"
+                        color="error"
+                        sx={{ mr: 1 }}
+                        disabled={!params.row.canDelete}
+                        onClick={() => handleDelete(params.row)}
+                    >
+                        <DeleteIcon />
+                    </IconButton>
+                    </span>                
                 </Tooltip>
             </>
         )

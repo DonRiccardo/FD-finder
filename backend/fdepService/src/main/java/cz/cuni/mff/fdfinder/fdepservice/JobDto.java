@@ -1,30 +1,36 @@
 package cz.cuni.mff.fdfinder.fdepservice;
 
-
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
 
 public class JobDto {
 
     private Long id;
     private String status;
-    private String algorithm;
+    private List<String> algorithm;
+    private int repeat;
     private Long dataset;
+    private String datasetName;
     private int limitEntries;
     private int skipEntries;
     private int maxLHS;
-    private String output;
+    private List<JobResult> jobResults = new ArrayList<>();
+
 
     public JobDto() {}
 
-    public JobDto(Long id, String algorithm, Long dataset, String status, int limitEntries, int skipEntries, int maxLHS, String output) {
+    public JobDto(Long id, List<String> algorithm, int repeat, Long dataset, String datasetName, String status, int limitEntries, int skipEntries, int maxLHS, String output) {
 
         this.id = id;
         this.algorithm = algorithm;
+        this.repeat = repeat;
         this.dataset = dataset;
+        this.datasetName = datasetName;
         this.status = status;
         this.limitEntries = limitEntries;
         this.skipEntries = skipEntries;
         this.maxLHS = maxLHS;
-        this.output = output;
     }
 
     public Long getId() {
@@ -47,14 +53,24 @@ public class JobDto {
         this.status = status;
     }
 
-    public String getAlgorithm() {
+    public List<String> getAlgorithm() {
 
         return this.algorithm;
     }
 
-    public void setAlgorithm(String algorithm) {
+    public void setAlgorithm(List<String> algorithm) {
 
         this.algorithm = algorithm;
+    }
+
+    public int getRepeat() {
+
+        return this.repeat;
+    }
+
+    public void setRepeat(int repeat) {
+
+        this.repeat = repeat;
     }
 
     public Long getDataset() {
@@ -65,6 +81,16 @@ public class JobDto {
     public void setDataset(Long dataset) {
 
         this.dataset = dataset;
+    }
+
+    public String getDatasetName() {
+
+        return this.datasetName;
+    }
+
+    public void setDatasetName(String datasetName) {
+
+        this.datasetName = datasetName;
     }
 
     public int getLimitEntries() {
@@ -97,13 +123,13 @@ public class JobDto {
         this.maxLHS = maxLHS;
     }
 
-    public String getOutput() {
+    public  List<JobResult> getJobResults() {
 
-        return this.output;
+        return jobResults.stream().filter(res -> Objects.equals(res.getAlgorithm(), "fdep")).toList();
     }
 
-    public void setOutput(String output) {
+    public void setJobResults(List<JobResult> jobResults) {
 
-        this.output = output;
+        this.jobResults = jobResults;
     }
 }

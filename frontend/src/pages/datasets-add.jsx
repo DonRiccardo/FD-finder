@@ -13,13 +13,11 @@ import {
   InputAdornment,
   FormControl, FormControlLabel, FormLabel,
   InputLabel,
-  OutlinedInput
 } from "@mui/material";
 
 import CheckIcon from '@mui/icons-material/Check';
 import CloseIcon from '@mui/icons-material/Close';
 import { Navigate } from "react-router-dom";
-import Papa from "papaparse";
 
 
 const allowedFileExts = ["csv", "json"];
@@ -34,6 +32,7 @@ export default function DatasetsAddPage(){
     
     const [delim, setDelim] = React.useState("");
     const [hasHeader, setHasHeader] = React.useState(false);
+    const [rawRows, setRawRows] = React.useState([]);
     const [preview, setPreview] = React.useState([]);
     
     const [submitted, setSubmitted] = React.useState(false);
@@ -99,7 +98,8 @@ export default function DatasetsAddPage(){
         const baseName = name.replace(/\.[^/.]+$/, "");
         
         if (ext === "csv") {
-            readCsvFile(file);
+            
+            readCsvFile(file);            
         } else {
             console.error("This file extension is not allowed");
             alert("ERROR: This file extension is not allowed");
@@ -112,18 +112,59 @@ export default function DatasetsAddPage(){
         
     }
 
-    const readCsvFile = (file) => {
-        setPreview([]);
+    async function* makeTextFileLineIterator(fileURL) {
+        const utf8Decoder = new TextDecoder("utf-8");
+        let response = await fetch(fileURL);
+        let reader = response.body.getReader();
+        let { value: chunk, done: readerDone } = await reader.read();
+        chunk = chunk ? utf8Decoder.decode(chunk, { stream: true }) : "";
 
-        Papa.parse(file, {
-            header: false,  
-            preview: 10,       
-            skipEmptyLines: false,
-            complete: (results) => {
-                setPreview(results.data.slice(0, 10)); 
-                setDelim(results.meta.delimiter);                
-            },
-        });
+        let re = /\r?\n/g;
+        let startIndex = 0;
+
+        for (;;) {
+            let result = re.exec(chunk);
+            if (!result) {
+            if (readerDone) {
+                break;
+            }
+            let remainder = chunk.substring(startIndex);
+            ({ value: chunk, done: readerDone } = await reader.read());
+            chunk =
+                remainder + (chunk ? utf8Decoder.decode(chunk, { stream: true }) : "");
+            startIndex = re.lastIndex = 0;
+            continue;
+            }
+            yield chunk.substring(startIndex, result.index);
+            startIndex = re.lastIndex;
+        }
+        if (startIndex < chunk.length) {
+            // last line didn't end in a newline char
+            yield chunk.substring(startIndex);
+        }
+    }
+
+    const readCsvFile = async (file) => {
+        setPreview([]);
+        setDelim(",");
+
+        const rows = [];
+        let rowCount = 0;
+        const maxPreviewRows = 10;
+        
+        for await (let line of makeTextFileLineIterator(URL.createObjectURL(file))) {
+            if (line && line.trim().length > 0) {
+                rows.push(line);
+                rowCount++;
+                if (rowCount >= maxPreviewRows) {
+                    break;
+                }
+            }
+        }
+
+        setRawRows(rows);
+        setPreview(rows.map((row) => row.split(",")));
+
     }
 
     const handleSubmit = (event) => {
@@ -174,6 +215,7 @@ export default function DatasetsAddPage(){
         .catch((error) => {
             console.error(error);
             alert("An error occurred while saving the Dataset.");
+            
         });
     }
 
@@ -222,13 +264,13 @@ export default function DatasetsAddPage(){
                 
                 <TextField
                     name="fileName"
-                    label="File Name"
+                    label="Dataset Name"
                     aria-labelledby="fileName-label"
                     value={fileName}
                     onChange={(e) => setFileName(e.target.value)}
                     required
                     error={!isNameUnique}
-                    helperText={!isNameUnique ? "File name must be unique" : ""}
+                    helperText={!isNameUnique ? "Dataset name must be unique" : ""}
                     slotProps={{
                         input: {
                         endAdornment: fileName.length > 0 ? (
@@ -291,7 +333,9 @@ export default function DatasetsAddPage(){
                             name="delim"
                             value={delim}
                             label="Delimiter"
-                            onChange={(e) => setDelim(e.target.value)}
+                            onChange={(e) => {setDelim(e.target.value);
+                                setPreview(rawRows.map((row) => row.split(e.target.value)));
+                            }}
                         />
                         </FormControl>
                     </Tooltip>

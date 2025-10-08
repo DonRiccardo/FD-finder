@@ -1,8 +1,10 @@
 package com.example.jobservice;
 
-import jakarta.persistence.Entity;
+import com.example.jobservice.model.Job;
+import com.example.jobservice.model.JobResult;
+import com.example.jobservice.model.JobStatus;
+import com.example.jobservice.model.MetricPoint;
 import jakarta.validation.Valid;
-import org.springframework.cloud.client.ServiceInstance;
 import org.springframework.cloud.client.discovery.DiscoveryClient;
 import org.springframework.core.io.Resource;
 import org.springframework.hateoas.CollectionModel;
@@ -14,6 +16,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.multipart.MultipartFile;
@@ -33,12 +36,16 @@ public class JobController {
     private final JobService jobService;
     private final JobRepository jobRepository;
     private final JobResultsRepository jobResultsRepository;
-    private final JobModelAssembler jobAssembler;
-    private final JobResultsModelAssembler jobResultsAssembler;
+    private final MetricPoint.JobModelAssembler jobAssembler;
+    private final JobStatus.JobResultsModelAssembler jobResultsAssembler;
     private final DiscoveryClient discoveryClient;
     private final RestClient  restClient;
+    private final SimpMessagingTemplate simpMessagingTemplate;
 
-    public JobController(JobService jobService , JobRepository jobRepository, JobResultsRepository jobResultsRepository,  JobModelAssembler jobAssembler, JobResultsModelAssembler jobResultsAssembler , DiscoveryClient discoveryClient, RestClient.Builder restClientBuilder) {
+    public JobController(JobService jobService , JobRepository jobRepository, JobResultsRepository jobResultsRepository,
+                         MetricPoint.JobModelAssembler jobAssembler, JobStatus.JobResultsModelAssembler jobResultsAssembler ,
+                         DiscoveryClient discoveryClient, RestClient.Builder restClientBuilder,
+                         SimpMessagingTemplate simpMessagingTemplate) {
         this.jobService = jobService;
         this.jobRepository = jobRepository;
         this.jobResultsRepository = jobResultsRepository;
@@ -46,6 +53,7 @@ public class JobController {
         this.jobResultsAssembler = jobResultsAssembler;
         this.discoveryClient = discoveryClient;
         this.restClient = restClientBuilder.build();
+        this.simpMessagingTemplate = simpMessagingTemplate;
     }
 
     @PostMapping
@@ -119,16 +127,23 @@ public class JobController {
                 .orElseThrow(() -> new JobNotFoundException(id));
 
         if (job.isJobPossibleToRun()){
-            job.setStatus(JobStatus.WAITING);
+            job.setStatusToIterationsAndJob(JobStatus.WAITING);
+            Job newJob = jobRepository.save(job);
 
-            ServiceInstance serviceInstance = discoveryClient.getInstances("algservice-" + job.getAlgorithm()).get(0);
-            ResponseEntity<Void> response = restClient.post()
-                    .uri(serviceInstance.getUri() + "/fdep/start/" + job.getId())
-                    .accept(MediaType.APPLICATION_JSON)
-                    .retrieve()
-                    .toBodilessEntity();
+            for (String alg : job.getAlgorithm()) {
+                try {
 
-            return ResponseEntity.ok(jobAssembler.toModel(jobRepository.save(job)));
+                    jobService.startJobAtAlgorithm(alg, newJob, discoveryClient, restClient);
+                }
+                catch (Exception e) {
+
+                    newJob.setAlgorithmIterationStatus(alg, JobStatus.FAILED);
+                    newJob = jobRepository.save(newJob);
+                }
+
+            }
+
+            return ResponseEntity.ok(jobAssembler.toModel(newJob));
         }
 
         return ResponseEntity
@@ -139,21 +154,30 @@ public class JobController {
                         .withDetail("You are not allowed to start the job in state: "+job.getStatus().toString()));
     }
 
-    @PostMapping("/{id}/results")
-    public ResponseEntity<?> results(
+    @PatchMapping("/results/{id}")
+    public ResponseEntity<?> postResultOfJobIteration(
             @PathVariable Long id,
             @Valid @RequestPart("jobresult") JobResult jobResult,
             @RequestPart("file") MultipartFile file){
 
-        jobResultsRepository.save(jobResult);
-        jobService.uploadFile(id, file);
+        JobResult oldJobResult = jobResultsRepository.findById(id)
+                .orElseThrow(() -> new ResultsNotFoundException(id));
+
+        oldJobResult.setStatus(jobResult.getStatus());
+        oldJobResult.setStartTime(jobResult.getStartTime());
+        oldJobResult.setEndTime(jobResult.getEndTime());
+        oldJobResult.setNumFoundFd(jobResult.getNumFoundFd());
+        oldJobResult.setSnapshots(jobResult.getSnapshots());
+
+        jobResultsRepository.save(oldJobResult);
+        jobService.uploadFile(oldJobResult, file);
 
         return ResponseEntity
                 .ok().build();
     }
 
-    @GetMapping("/{id}/results")
-    public EntityModel<JobResult> results(@PathVariable Long id){
+    @GetMapping("/results/{id}")
+    public EntityModel<JobResult> resultOfOneJobIteration(@PathVariable Long id){
 
         JobResult jobResult = jobResultsRepository.findById(id)
                 .orElseThrow(() -> new ResultsNotFoundException(id));
@@ -162,16 +186,62 @@ public class JobController {
 
     }
 
-    @GetMapping("/{id}/results/fds")
+    @GetMapping("/{id}/results/graphdata")
+    public ResponseEntity<?> resultsOfJobForGraph(@PathVariable Long id){
+        // TODO endpoint na odoslanie averaged dát pre grafovu vizualizaciu
+        // TODO ulozit spracovane data do JOB v get metode ak premenna==null
+        // TODO object ako {graphMetrics: [], graphTime: []} - data pre graf s CPU+memory, data pre graf s casom
+
+        Job job = jobRepository.findById(id)
+                .orElseThrow(() -> new JobNotFoundException(id));
+
+        if (job.getStatus() != JobStatus.DONE){
+
+            return ResponseEntity
+                    .status(HttpStatus.METHOD_NOT_ALLOWED)
+                    .header(HttpHeaders.CONTENT_TYPE, MediaTypes.HTTP_PROBLEM_DETAILS_JSON_VALUE)
+                    .body(Problem.create()
+                            .withTitle("Method Not Allowed")
+                            .withDetail("You are not allowed to obtain data from unfinished job."));
+        }
+
+        return ResponseEntity.ok(EntityModel.of(jobService.prepareSnapshotDataForVisualization(job)));
+    }
+
+    @GetMapping("/{id}/results")
+    public ResponseEntity<?> resultsOfJob(@PathVariable Long id) {
+        // TODO vysledky JOBu cez vsetky iteracie algoritmov - priemer/max/min cez priemery iteracii
+
+        Job job = jobRepository.findById(id)
+                .orElseThrow(() -> new JobNotFoundException(id));
+
+        if (job.getStatus() != JobStatus.DONE){
+
+            return ResponseEntity
+                    .status(HttpStatus.METHOD_NOT_ALLOWED)
+                    .header(HttpHeaders.CONTENT_TYPE, MediaTypes.HTTP_PROBLEM_DETAILS_JSON_VALUE)
+                    .body(Problem.create()
+                            .withTitle("Method Not Allowed")
+                            .withDetail("You are not allowed to obtain data from unfinished job."));
+        }
+
+        return ResponseEntity.ok(EntityModel.of(jobService.prepareStatisticForJob(job)));
+
+    }
+
+    @GetMapping("/results/{id}/fds")
     public ResponseEntity<?> resultsFds(@PathVariable Long id){
         try {
-            Resource resource = jobService.getFile(id);
+            JobResult jobResult = jobResultsRepository.findById(id)
+                    .orElseThrow(() -> new ResultsNotFoundException(id));
+
+            Resource resource = jobService.getFile(jobResult);
 
             return ResponseEntity
                     .ok()
                     .header(
                             HttpHeaders.CONTENT_DISPOSITION,
-                            "attachment; filename=\"" + jobService.getResultsFileName(id) + "\""
+                            "attachment; filename=\"" + jobService.getResultsFileName(jobResult) + "\""
                     )
                     .header(HttpHeaders.ACCESS_CONTROL_EXPOSE_HEADERS, HttpHeaders.CONTENT_DISPOSITION)
                     .contentType(MediaType.parseMediaType("text/plain"))
@@ -183,21 +253,28 @@ public class JobController {
         }
     }
 
-    @PatchMapping("/{id}/status")
+    @PatchMapping("/iteration/{id}/status")
     public ResponseEntity<?> updateStatus(@PathVariable Long id, @RequestBody JobStatus jobStatus) {
-        Job job = jobRepository.findById(id)
-                .orElseThrow(() -> new JobNotFoundException(id));
+        JobResult jobResult = jobResultsRepository.findById(id)
+                .orElseThrow(() -> new ResultsNotFoundException(id));
 
-        if (job.isJobRunning() && (jobStatus == JobStatus.RUNNING || jobStatus == JobStatus.DONE || jobStatus == JobStatus.FAILED)) {
-            job.setStatus(jobStatus);
-            return ResponseEntity.ok(jobAssembler.toModel(jobRepository.save(job)));
+        if (jobResult.isJobRunning() && (jobStatus == JobStatus.RUNNING || jobStatus == JobStatus.DONE || jobStatus == JobStatus.FAILED)) {
+            jobResult.setStatus(jobStatus);
+
+            Job job = jobResult.getJob();
+            if (job.setAndChangedJobStatusBasedOnIterations()) jobRepository.save(job);
+
+            simpMessagingTemplate.convertAndSend("/topic/jobs", job);
+
+            return ResponseEntity.ok(jobResultsAssembler.toModel(jobResultsRepository.save(jobResult)));
         }
+
 
         return ResponseEntity
                 .status(HttpStatus.METHOD_NOT_ALLOWED)
                 .header(HttpHeaders.CONTENT_TYPE, MediaTypes.HTTP_PROBLEM_DETAILS_JSON_VALUE)
                 .body(Problem.create()
                         .withTitle("Method Not Allowed")
-                        .withDetail("You are not allowed to change the job status to: "+jobStatus.toString()));
+                        .withDetail("You are not allowed to change the job status to: "+jobStatus.toString() + " from:" + jobResult.getStatus().toString()));
     }
 }

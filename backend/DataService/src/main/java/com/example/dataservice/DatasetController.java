@@ -57,6 +57,7 @@ public class DatasetController {
         dataset.setHash(response.hash());
         dataset.setOriginalFilename(response.originalName());
         dataset.setSize(file.getSize());
+        dataset.setSavedAt(response.savedAt());
 
         CompletableFuture<DatasetService.FileNumbers> fn = datasetService.processNewCSVDataset(dataset);
         try{
@@ -124,6 +125,10 @@ public class DatasetController {
     @DeleteMapping("/{id}/delete")
     public ResponseEntity<?> delete(@PathVariable Long id) {
 
+        Dataset dataset = datasetRepository.findById(id)
+                .orElseThrow(() -> new DatasetNotFoundException(id));
+
+        datasetService.deleteDatasetFile(dataset);
         datasetRepository.deleteById(id);
 
         return ResponseEntity.noContent().build();

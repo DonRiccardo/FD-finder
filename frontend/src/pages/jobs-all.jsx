@@ -22,7 +22,8 @@ import SearchIcon from '@mui/icons-material/Search';
 import Typography from '@mui/material/Typography';
 import Badge from '@mui/material/Badge';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
-
+import SockJS  from "sockjs-client/dist/sockjs";
+import { Client } from "@stomp/stompjs";
 
 export default function JobssAll() {
 
@@ -37,15 +38,7 @@ export default function JobssAll() {
 
                 const jobs= data._embedded?.jobList || [];
 
-                const formatted = jobs.map((job) => ({
-                    ...job,
-                    canDelete: Boolean(job._links?.delete),
-                    canCancel: Boolean(job._links?.cancel),
-                    canRun: Boolean(job._links?.start),
-                    canShowResults: Boolean(job._links?.results),
-                    createdAt: job.createdAt ? new Date(job.createdAt.replace(/(\.\d{3})\d+/, "$1")) : null,
-                    updatedAt: job.updatedAt ? new Date(job.updatedAt.replace(/(\.\d{3})\d+/, "$1")) : null,
-                }));
+                const formatted = jobs.map((job) => (formatJobMetadaata(job)));
 
                 setRows(formatted);
             })
@@ -62,6 +55,39 @@ export default function JobssAll() {
     useEffect(() => {
         fetchJobs();
     }, [fetchJobs]);
+
+    useEffect(() => {
+        const socket = new SockJS("http://localhost:8082/websocket");
+        const stompClient = new Client({
+        webSocketFactory: () => socket,
+        reconnectDelay: 5000,
+        onConnect: () => {
+            console.log("WS-Connected");
+
+            stompClient.subscribe("/topic/jobs", (message) => {
+                const jobUpdate = formatJobMetadaata(JSON.parse(message.body));
+                
+                setRows((prev) => {
+                    const index = prev.findIndex((row) => row.id === jobUpdate.id);
+                    if (index !== -1) {
+                        const updated = [...prev];
+                        updated[index] = jobUpdate;
+                        return updated;
+                    } 
+                    else {
+                        return [...prev, jobUpdate];
+                    }
+                });
+            });
+        }
+        });
+
+        stompClient.activate();
+
+        return () => {
+            stompClient.deactivate();
+        };
+    }, []);
 
     const runJob = (row) => async () => {
         if (row.canRun) {
@@ -133,9 +159,21 @@ export default function JobssAll() {
         { field: "dataset", headerName: "Dataset ID", minWidth: 10, type: "number" },
         { field: "datasetName", headerName: "Dataset Name", minWidth: 150 },
         { field: "status", headerName: "Status", minWidth: 40 },    
-        { field: "limitEntries", headerName: "MAX REC", minWidth: 50, type: "number" },
-        { field: "skipEntries", headerName: "SKIP REC", minWidth: 50, type: "number" },
-        { field: "maxLHS", headerName: "MAX LHS", minWidth: 10, type: "number" },
+        { field: "limitEntries", headerName: "LIMIT REC", minWidth: 50, type: "number",
+            valueGetter: (value) => {
+                return value > 0 ? value : "-";
+            }
+         },
+        { field: "skipEntries", headerName: "SKIP REC", minWidth: 50, type: "number",
+            valueGetter: (value) => {
+                return value > 0 ? value : "-";
+            }
+         },
+        { field: "maxLHS", headerName: "MAX LHS", minWidth: 10, type: "number", 
+            valueGetter: (value) => {
+                return value > 0 ? value : "-";
+            }
+         },
         { field: "output", headerName: "Output", minWidth: 10 },
         { field: "createdAt", 
             headerName: "Created At", 
@@ -171,30 +209,20 @@ export default function JobssAll() {
                     </IconButton>
                     </Tooltip>
                 </Link>
-                <Tooltip title={params.row.canDelete ? "Download found FDs " : "There are no results to download"}>
-                <IconButton 
-                    aria-label="download"
-                    variant="outlined" 
-                    size="small"
-                    sx={{ mr: 1 }}
-                    disabled={params.row.canDelete}    // TODO zmenit na canDownload
-                    onClick={() => handleDownload(params.row)}
-                >
-                    <DownloadIcon />
-                </IconButton>
-                </Tooltip>
                 <Tooltip title={params.row.canDelete ? "Delete Job" : "Delete Disabled"}>
-                <IconButton 
-                    aria-label="delete"
-                    variant="outlined" 
-                    size="small"
-                    color="error"
-                    sx={{ mr: 1 }}
-                    disabled={params.row.canDelete}
-                    onClick={() => handleDelete(params.row)}
-                >
-                    <DeleteIcon />
-                </IconButton>
+                    <span>
+                    <IconButton 
+                        aria-label="delete"
+                        variant="outlined" 
+                        size="small"
+                        color="error"
+                        sx={{ mr: 1 }}
+                        disabled={params.row.canDelete}
+                        onClick={() => handleDelete(params.row)}
+                    >
+                        <DeleteIcon />
+                    </IconButton>
+                    </span>                
                 </Tooltip>
             </>
         )
@@ -256,6 +284,19 @@ export default function JobssAll() {
 }
 
 
+
+function formatJobMetadaata(job) {
+
+    return {
+        ...job,
+        canDelete: Boolean(job._links?.delete),
+        canCancel: Boolean(job._links?.cancel),
+        canRun: Boolean(job._links?.start),
+        canShowResults: Boolean(job._links?.results),
+        createdAt: job.createdAt ? new Date(job.createdAt.replace(/(\.\d{3})\d+/, "$1")) : null,
+        updatedAt: job.updatedAt ? new Date(job.updatedAt.replace(/(\.\d{3})\d+/, "$1")) : null,
+    };
+}
 
 function EditToolbar() {
   return (

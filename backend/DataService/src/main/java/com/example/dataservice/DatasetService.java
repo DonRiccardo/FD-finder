@@ -28,17 +28,19 @@ public class DatasetService {
     public record FileResponse(
 
             String hash,
-            String originalName
+            String originalName,
+            long savedAt
     ) implements Serializable {};
 
     public FileResponse uploadFile(MultipartFile file, FileFormat fileFormat) {
 
         final String filename = getFilename(file);
         final String hash = computeFileHash(file);
+        long savedAt = System.currentTimeMillis();
 
-        saveFileData(file, getFilePath(hash, fileFormat));
+        saveFileData(file, getFilePath(hash, fileFormat, savedAt));
 
-        return new FileResponse(hash, filename);
+        return new FileResponse(hash, filename, savedAt);
     }
 
     public record FileNumbers(
@@ -53,7 +55,7 @@ public class DatasetService {
         long numEntries = 0L;
 
         try{
-            Path filePath = getFilePath(dataset.getHash(), dataset.getFileFormat());
+            Path filePath = getFilePath(dataset.getHash(), dataset.getFileFormat(), dataset.getSavedAt());
             try(BufferedReader br = Files.newBufferedReader(filePath)){
 
                 String line = br.readLine();
@@ -74,7 +76,7 @@ public class DatasetService {
     }
 
     public Resource getFile(Dataset dataset) throws IOException {
-        Path path = getFilePath(dataset.getHash(), dataset.getFileFormat());
+        Path path = getFilePath(dataset.getHash(), dataset.getFileFormat(), dataset.getSavedAt());
 
         if(!Files.exists(path)) {
             throw new DatasetNotFoundException(dataset.getId());
@@ -84,9 +86,9 @@ public class DatasetService {
 
     }
 
-    private Path getFilePath(String hash, FileFormat fileFormat) {
+    private Path getFilePath(String hash, FileFormat fileFormat, long savedAt) {
 
-        return Paths.get(this.datasetDirectory, fileFormat.toString().toLowerCase(), hash).toAbsolutePath().normalize();
+        return Paths.get(this.datasetDirectory, fileFormat.toString().toLowerCase(), savedAt + "_" + hash).toAbsolutePath().normalize();
     }
 
     private String computeFileHash(MultipartFile file) {
@@ -125,6 +127,16 @@ public class DatasetService {
             file.transferTo(path.toFile());
         } catch (Exception e) {
             throw new RuntimeException("Failed to save dataset file", e);
+        }
+    }
+
+    public void deleteDatasetFile(Dataset dataset) {
+        try {
+            Path datasetPath = getFilePath(dataset.getHash(), dataset.getFileFormat(), dataset.getSavedAt());
+            Files.deleteIfExists(datasetPath);
+        }
+        catch (IOException e) {
+            System.err.println("Failed to delete dataset file: " + dataset.getHash());
         }
     }
 

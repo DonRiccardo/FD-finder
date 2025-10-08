@@ -1,22 +1,75 @@
 package cz.cuni.mff.fdfinder.fdepservice;
 
+import java.util.List;
+
 public class JobResult {
 
-    Long jobId;
-    Long startTime;
-    Long endTime;
-    Long duration;
+    private Long id;
+    private JobStatus status;
+    private int iteration;
+    private String algorithm;
+    private Long startTime;
+    private Long endTime;
+    private Long duration;
 
-    int numFoundFd;
+    private int numFoundFd;
+    private List<Snapshot> snapshots;
 
-    public JobResult(Long jobId) {
+    public JobResult() {
 
-        this.jobId = jobId;
     }
 
-    public Long getJobId() {
+    public List<Snapshot> getSnapshots() {
 
-        return jobId;
+        return snapshots;
+    }
+
+    public void setSnapshots(List<Snapshot> snapshots) {
+
+        snapshots.forEach(snapshot -> {
+           snapshot.setTimestamp(snapshot.getTimestamp() - this.startTime);
+        });
+
+        this.snapshots = snapshots;
+    }
+
+    public Long getId() {
+
+        return id;
+    }
+
+    public void setId(Long id) {
+
+        this.id = id;
+    }
+
+    public JobStatus getStatus() {
+
+        return status;
+    }
+    public void setStatus(JobStatus status) {
+
+        this.status = status;
+    }
+
+    public int getIteration() {
+
+        return iteration;
+    }
+
+    public void setIteration(int iteration) {
+
+        this.iteration = iteration;
+    }
+
+    public String getAlgorithm() {
+
+        return algorithm;
+    }
+
+    public void setAlgorithm(String algorithm) {
+
+        this.algorithm = algorithm;
     }
 
     public void setStartTime(Long startTime) {

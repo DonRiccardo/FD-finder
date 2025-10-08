@@ -90,9 +90,13 @@ public class _CSVTestCase implements Serializable{
 
     private void prepareData() {
 
-        if (this.skip >= 0 && this.limit > 0) {
+        if (this.skip >= 0) {
 
-            this.df = this.df.offset(this.skip).limit(this.limit);
+            this.df = this.df.offset(this.skip);
+        }
+        if (this.limit > 0) {
+
+            this.df = this.df.limit(this.limit);
         }
     }
 

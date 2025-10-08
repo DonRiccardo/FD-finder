@@ -29,6 +29,7 @@ public class Dataset {
     private String originalFilename;
     private String hash;
     private LocalDateTime createdAt;
+    private long savedAt;
 
     private String delim;
     private boolean header;
@@ -51,12 +52,6 @@ public class Dataset {
     public void prePersist() {
 
         this.createdAt = LocalDateTime.now();
-    }
-
-    @PostPersist
-    public void postPersist() {
-
-
     }
 
     public void setFileFormat(String fileFormat) {
@@ -180,6 +175,20 @@ public class Dataset {
     public LocalDateTime getCreatedAt() {
 
         return this.createdAt;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+
+        this.createdAt = createdAt;
+    }
+
+    public long getSavedAt() {
+
+        return this.savedAt;
+    }
+    public void setSavedAt(long savedAt) {
+
+        this.savedAt = savedAt;
     }
 
     @Override
