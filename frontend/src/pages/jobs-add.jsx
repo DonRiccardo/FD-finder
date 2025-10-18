@@ -14,14 +14,11 @@ import {
   InputAdornment,
   FormControl, FormControlLabel, FormLabel, InputLabel
 } from "@mui/material";
-import HelpOutlineIcon from "@mui/icons-material/HelpOutline";
 import { Navigate } from "react-router-dom";
 import CheckIcon from '@mui/icons-material/Check';
 import CloseIcon from '@mui/icons-material/Close';
 
-
-
-export default function JobsCreate() {
+export default function JobsCreate({ datasetId }) {
 
     const [availableAlgorithms, setAvailableAlgorithms] = useState([]);
     const [availableDatasets, setAvailableDatasets] = useState([]);
@@ -31,7 +28,7 @@ export default function JobsCreate() {
     const [jobName, setJobName] = useState("");
     const [jobDescription, setJobDescription] = useState("");
     const [algorithm, setAlgorithm] = useState([]);
-    const [dataset, setDataset] = useState({id: "", name: "", entries: 0});
+    const [dataset, setDataset] = useState("");
     const [repeat, setRepeat] = useState(1);
     const [limitEntries, setLimitEntries] = useState("");
     const [skipEntries, setSkipEntries] = useState("");
@@ -39,6 +36,12 @@ export default function JobsCreate() {
     const [submitted, setSubmitted] = useState(false);
 
     const [isNameUnique, setIsNameUnique] = React.useState(true);
+
+    const isNumberUnderNumEntries = (num) => {
+        if (loading || 
+            !(dataset in availableDatasets)) return true;
+        return num >= 0 && num <= availableDatasets[dataset].entries;
+    }
 
     
     React.useEffect(() => {
@@ -49,6 +52,7 @@ export default function JobsCreate() {
     
     
     useEffect(() => {
+        setLoading(true);
         async function fetchData() {
             try {
                 const fetchAlgorithms = await fetch("http://localhost:8761/algorithms");                
@@ -58,12 +62,16 @@ export default function JobsCreate() {
                 const fetchDatasets = await fetch("http://localhost:8081/datasets");
                 const datasetsData = await fetchDatasets.json();
                 const datasets = datasetsData._embedded?.datasetList || [];
+                const datasetDict = {};
+                datasets.forEach(dataset => {
+                    datasetDict[dataset.name] = {
+                        id: dataset.id,
+                        name: dataset.name,
+                        entries: dataset.numEntries,
+                    };
+                });
 
-                setAvailableDatasets(datasets.map((dataset) => ({
-                    id: dataset.id,
-                    name: dataset.name,
-                    entries: dataset.numEntries,
-                })));    
+                setAvailableDatasets(datasetDict);    
                 
                 const fetchJobs = await fetch("http://localhost:8082/jobs");
                 const jobsData = await fetchJobs.json();
@@ -82,12 +90,18 @@ export default function JobsCreate() {
         fetchData();
     }, []);
 
+    useEffect(() => {
+        if (datasetId && availableDatasets[Object.keys(availableDatasets)[0]]) {
+            const found = Object.values(availableDatasets).find(ds => ds.id === parseInt(datasetId, 10));
+            if (found) setDataset(found.name);            
+        }
+    }, [datasetId, availableDatasets]);
+
     const handleAlgorithmChange = (event) => {
         const {
         target: { value },
         } = event;
         setAlgorithm(
-            // On autofill we get a stringified value.
             typeof value === 'string' ? value.split(',') : value,
         );
     };
@@ -99,8 +113,8 @@ export default function JobsCreate() {
             jobName: jobName,
             jobDescription: jobDescription,
             algorithm: algorithm,
-            dataset: dataset.id,
-            datasetName: dataset.name,
+            dataset: availableDatasets[dataset].id,
+            datasetName: availableDatasets[dataset].name,
             repeat: repeat,
         };
 
@@ -140,7 +154,7 @@ export default function JobsCreate() {
 
     const resetForm = () => {
         setAlgorithm([]);
-        setDataset({id: "", name: "", entries: 0});
+        setDataset("");
         setLimitEntries("");
         setSkipEntries("");
         setMaxLhs("");
@@ -241,8 +255,8 @@ export default function JobsCreate() {
                             label="Dataset" 
                             onChange={(e) => setDataset(e.target.value)}
                         >
-                            {availableDatasets.map((ds) => (    
-                                <MenuItem key={ds.id} value={ds}>{ds.name}</MenuItem>
+                            {Object.keys(availableDatasets).map((name) => (    
+                                <MenuItem key={name} value={name}>{name}</MenuItem>
                             ))}
                         </Select>
                     </FormControl>
@@ -255,8 +269,8 @@ export default function JobsCreate() {
                         value={limitEntries}
                         onChange={(e) => setLimitEntries(parseInt(e.target.value, 10))}
                         size="small"
-                        error = {limitEntries < 0 || limitEntries > dataset.entries}
-                        helperText = {limitEntries < 0 || limitEntries > dataset.entries ? `Must be between 0 and ${dataset.entries}` : ""}
+                        error = {!isNumberUnderNumEntries(limitEntries)}
+                        helperText = {!isNumberUnderNumEntries(limitEntries) ? `Must be between 0 and ${availableDatasets[dataset].entries}` : ""}
                         />
                 </Tooltip>
                 {/* NUmber of rows OR entries to SKIP from beginig of the dataset */}
@@ -267,8 +281,8 @@ export default function JobsCreate() {
                         value={skipEntries}
                         onChange={(e) => setSkipEntries(parseInt(e.target.value, 10))}
                         size="small"
-                        error = {skipEntries < 0 || skipEntries > dataset.entries}
-                        helperText = {skipEntries < 0 || skipEntries > dataset.entries ? `Must be between 0 and ${dataset.entries}` : ""}
+                        error = {!isNumberUnderNumEntries(skipEntries)}
+                        helperText = {!isNumberUnderNumEntries(skipEntries) ? `Must be between 0 and ${availableDatasets[dataset].entries}` : ""}
                         />  
                 </Tooltip>
                 {/* MAX size of LHS */}

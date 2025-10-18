@@ -10,13 +10,11 @@ import {
 import { Link } from "react-router-dom";
 import AddIcon from "@mui/icons-material/Add";
 import DeleteIcon from '@mui/icons-material/Delete';
-import EditIcon from '@mui/icons-material/Edit';
 import DownloadIcon from '@mui/icons-material/Download';
 import FindInPageIcon from '@mui/icons-material/FindInPage';
 import ViewColumnIcon from '@mui/icons-material/ViewColumn';
 import FilterListIcon from '@mui/icons-material/FilterList';
 import Tooltip from '@mui/material/Tooltip';
-import Typography from '@mui/material/Typography';
 import Badge from '@mui/material/Badge';
 
 
@@ -28,7 +26,11 @@ export default function DatasetsAll() {
     const fetchDatasets = React.useCallback(async () => {
         try {
             fetch("http://localhost:8081/datasets")
-            .then((response) => response.json())
+            .then((response) => {
+                if(!response.ok) Promise.reject(response);
+
+                return response.json();
+            })
             .then((data) => {
 
                 const datasets = data._embedded?.datasetList || [];
@@ -48,7 +50,7 @@ export default function DatasetsAll() {
             
         }
         catch (error) {
-            console.error("Error fetching datasets:", error);
+            console.error("Error fetching datasets TRY:", error);
         }
     }, []);
 
@@ -58,41 +60,26 @@ export default function DatasetsAll() {
     
 
     const columns = [
-        { field: "id", headerName: "ID", minWidth: 5, type: "number" },
-        { field: "name", headerName: "Name", minWidth: 200 },
-        { field: "fileFormat", headerName: "Format", minWidth: 10},
-        { field: "description", headerName: "Description", minWidth: 200 },    
-        { field: "numEntries", headerName: "#REC", minWidth: 50, type: "number" },
-        { field: "numAttributes", headerName: "#ATT", minWidth: 50, type: "number" },
-        { field: "delim", headerName: "Delim", minWidth: 10, align: "center", headerAlign: "center" },
-        { field: "header", headerName: "Header", minWidth: 10, type: "boolean" },
+        { field: "id", headerName: "ID", width: 10, type: "number" },
+        { field: "name", headerName: "Name", width: 200 },
+        { field: "fileFormat", headerName: "Format", width: 80},
+        { field: "description", headerName: "Description", minWidth: 300 },    
+        { field: "numEntries", headerName: "#REC", width: 80, type: "number" },
+        { field: "numAttributes", headerName: "#ATT", width: 80, type: "number" },
+        { field: "delim", headerName: "Delim", width: 70, align: "center", headerAlign: "center" },
+        { field: "header", headerName: "Header", width: 80, type: "boolean" },
         { field: "createdAt", 
             headerName: "Created At", 
-            minWidth: 150,
+            width: 150,
             type: "dateTime"
         },
-        /*
-        { field: "updatedAt", 
-            headerName: "Updated At", 
-            width: 200,
-            type: "dateTime",
-            valueGetter: ({ value }) => value && new Date(value),
-        },
-        */
        {
         field: "actions",
         headerName: "",
-        minWidth: 180,
+        width: 180,
         renderCell: (params) => (
             <>
-                <Link to={"/datasets/${params.id}"}>
-                    <Tooltip title="Edit Dataset">
-                    <IconButton variant="contained" size="small" sx={{ mr: 1 }}  aria-label="edit">
-                        <EditIcon />
-                    </IconButton>
-                    </Tooltip>
-                </Link>
-                <Link to={"/jobs"}>
+                <Link to={"/jobs/create/" + params.row.id}>
                     <Tooltip title="Create Job with this Dataset">
                     <IconButton variant="outlined" size="small" sx={{ mr: 1 }} aria-label="create job">
                         <FindInPageIcon />
@@ -180,7 +167,7 @@ export default function DatasetsAll() {
                 const link = document.createElement('a');
 
                 link.href = url;
-                link.download = filename; // použije meno zo servera
+                link.download = filename;
                 document.body.appendChild(link);
                 link.click();
                 link.remove();

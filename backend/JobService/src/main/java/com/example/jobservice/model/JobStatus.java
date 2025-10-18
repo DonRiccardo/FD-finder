@@ -17,19 +17,4 @@ public enum JobStatus {
     DONE        // user can do nothing?
     ;
 
-    @Component
-    public static class JobResultsModelAssembler implements RepresentationModelAssembler<JobResult, EntityModel<JobResult>> {
-
-        @Override
-        public EntityModel<JobResult> toModel(JobResult jobResult) {
-
-            EntityModel<JobResult> entityModel = EntityModel.of(jobResult,
-                    linkTo(methodOn(JobController.class).resultOfOneJobIteration(jobResult.getId())).withSelfRel(),
-                    linkTo(methodOn(JobController.class).all()).withRel("jobs"),
-                    linkTo(methodOn(JobController.class).resultsFds(jobResult.getJob().getId())).withRel("resultsFds"));
-
-
-            return entityModel;
-        }
-    }
 }

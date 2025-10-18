@@ -1,16 +1,7 @@
 import React, { use, useEffect, useState } from "react";
 import {
-  Stack,
-  Button,
-  Checkbox,
-  Select,
-  MenuItem,
-  Box, Tab, Tabs,
-  IconButton,
-  Tooltip,
-  FormControl,
-  InputLabel,
-  OutlinedInput,
+  Stack, Select, MenuItem, Box, Tab, Tabs,
+  IconButton, Tooltip, FormControl, InputLabel,
   CircularProgress, Table, TableBody, TableCell, TableHead, TableRow
 } from "@mui/material";
 import List from '@mui/material/List';
@@ -21,16 +12,10 @@ import DownloadIcon from '@mui/icons-material/Download';
 import FindInPageIcon from '@mui/icons-material/FindInPage';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import PropTypes from 'prop-types';
-import { Navigate } from "react-router-dom";
 import {
   Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip as ChartToolTip,
-  Legend,
+  CategoryScale, LinearScale, PointElement, LineElement,
+  Title, Tooltip as ChartToolTip, Legend,
 } from 'chart.js';
 import { Line } from 'react-chartjs-2';
 
@@ -74,13 +59,13 @@ function formatJobAlgorithmStats(stats) {
         cpuMin: roundOrZeroAndPercentage(stats.cpuMin),
         cpuAvg: roundOrZeroAndPercentage(stats.cpuAvg),
         cpuMax: roundOrZeroAndPercentage(stats.cpuMax),
-        numFdsMin: roundOrZero(stats.numFdsMin),
-        numFdsAvg: roundOrZero(stats.numFdsAvg),
-        numFdsMax: roundOrZero(stats.numFdsMax),
+        fdsMin: roundOrZero(stats.fdsMin),
+        fdsAvg: roundOrZero(stats.fdsAvg),
+        fdsMax: roundOrZero(stats.fdsMax),
     };
 }
 
-export default function JobsResults() {
+export default function JobsResults({ jobId }) {
 
     const [availableJobs, setAvailableJobs] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -88,16 +73,15 @@ export default function JobsResults() {
     const [selectedTabValue, setSelectedTabValue] = useState(0);
     const [showFds, setShowFds] = useState(false);
 
-    const [selectedJob, setSelectedJob] = useState(null);
+    const [selectedJob, setSelectedJob] = useState("");
     const [selectedJobAlgorithm, setSelectedJobAlgorithm] = useState("");
-    const [selectedAlgorithmIterations, setSelectedAlgorithmIterations] = useState([]);
     const [dataset, setDataset] = useState(null);
     const [jobStats, setJobStats] = useState(null);
     const [graphData, setGraphData] = useState(null);
     const [selectedIterationToShowFds, setSelectedIterationToShowFds] = useState("");
     const [foundFDs, setFoundFDs] = useState([]);
 
-    const filteredResults = selectedJob?.jobResults.filter(
+    const filteredResults = availableJobs[selectedJob]?.jobResults.filter(
         (r) => r.algorithm === selectedJobAlgorithm
     );
 
@@ -107,63 +91,99 @@ export default function JobsResults() {
         setLoading(true);
 
         async function fetchJobs() {
-            try {
-                const response = await fetch("http://localhost:8082/jobs");
-                const jobsData = await response.json();
-                let jobs = jobsData._embedded?.jobList || [];
-                setAvailableJobs(jobs);
-            }
-            catch (error) {
+            
+            fetch("http://localhost:8082/jobs")
+            .then(response => {
+                if (!response.ok) throw new Error("Failed to fetch jobs");
+                return response.json();
+            })
+            .then(data => {
+                const jobs = data._embedded?.jobList || [];
+                const jobDict = {};
+                jobs.forEach(job => {
+                    jobDict[job.jobName] = {
+                        ...job,
+                    };
+                });
+
+                setAvailableJobs(jobDict);
+            })
+            .catch(error => {
                 console.error("Error fetching jobs:", error);
-            }
-            finally {
+            })
+            .finally(() => {
                 setLoading(false);
-            }
+            });
         };
         
         fetchJobs();
 
     }, []);
 
+    useEffect(() => {        
+        if (jobId && availableJobs[Object.keys(availableJobs)[0]]) {
+            const found = Object.values(availableJobs).find(j => j.id === parseInt(jobId, 10));
+            if (found) setSelectedJob(found.jobName);          
+        }
+    }, [jobId, availableJobs]);
+
     useEffect(() => {
         setFetchingResults(true);
         resetForm();
 
-        async function fetchResultsOfJob(params) {
+        async function fetchResultsOfJob() {
+            
+            if (!selectedJob) {
+                resetForm();
+                return;
+            }
+            const job = availableJobs[selectedJob];
 
-            try{
-                if (selectedJob) {
+            fetch("http://localhost:8081/datasets/" + job.dataset)
+            .then(res => {
+                if (!res.ok) throw new Error("Failed to fetch dataset metadata");
+                return res.json();
+            })
+            .then(datasetMetadata => {
+                setDataset(datasetMetadata);
 
-                    const [jobStatsRes, datasetMetadata, graphData] = await Promise.all([
-                        fetch("http://localhost:8082/jobs/" + selectedJob.id + "/results")
-                        .then(res => res.json())
-                        .then(data => {
-                            const result = {};
-                            for (const [key, value] of Object.entries(data)) {
-                                result[key] = formatJobAlgorithmStats(value);
-                            }
-                            return result;
-                        } ),
-                        fetch("http://localhost:8081/datasets/" + selectedJob.dataset).then(res => res.json()),                        
-                        fetch("http://localhost:8082/jobs/" + selectedJob.id + "/results/graphdata").then(res => res.json())
-                    ]);
+                if (job.status === "DONE") {
+                    return Promise.all([
+                        fetch("http://localhost:8082/jobs/" + job.id + "/results")
+                        .then(r => { 
+                            if (!r.ok) throw new Error("Failed to fetch job stats"); 
+                            return r.json();
+                        }),
+                        fetch("http://localhost:8082/jobs/" + job.id + "/results/graphdata")
+                        .then(r => { 
+                            if (!r.ok) throw new Error("Failed to fetch graph data"); 
+                            return r.json(); 
+                        })
+                    ])
+                    .then(([statsJson, graphJson]) => {
+                        const formattedStats = {};
 
-                    setJobStats(jobStatsRes);
-                    setDataset(datasetMetadata);
-                    setGraphData(graphData);
-                    
-                    
-                }
+                        for (const [key, value] of Object.entries(statsJson || {})) {
+                        
+                            formattedStats[key] = formatJobAlgorithmStats(value);
+                        }
+
+                        setJobStats(formattedStats);
+                        setGraphData(graphJson);
+                    });
+                } 
                 else {
-                    resetForm();
+
+                    setJobStats(null);
+                    setGraphData(null);
                 }
-            }
-            catch (error) {
+            })
+            .catch((error) => {
                 console.error("Error fetching job results or dataset:", error);
-            }
-            finally {
+            })
+            .finally(() => {
                 setFetchingResults(false);
-            }
+            });
         }
            
         
@@ -171,30 +191,34 @@ export default function JobsResults() {
     }, [selectedJob]);
 
     const handleShowFDs = async (jobResultId) => {
-        try {
-            const response = await fetch("http://localhost:8082/jobs/results/" + jobResultId + "/fds");
-            const fdsRes = await response.text();
-
-            const fdsArray = fdsRes.trim().split("\n").filter(line => line.trim() !== "").map(fd => {
+        setLoading(true);
+        fetch("http://localhost:8082/jobs/results/" + jobResultId + "/fds")
+        .then(res => { 
+            if (!res.ok) throw new Error("Failed to fetch FDs"); return res.text(); 
+        })
+        .then(fdsRes => {
+            const fdsArray = fdsRes.trim().split("\n").filter(line => line.trim() !== "")
+            .map(fd => {
                 const [lhsRaw, rhsRaw] = fd.split("->");
                 const lhs = lhsRaw
                     .replace(/\[|\]/g, "")
                     .split(",")
-                    .map(att => att.trim().replace(selectedJob.datasetName + ".", ""))
+                    .map(att => att.trim().replace(availableJobs[selectedJob].datasetName + ".", ""))
                     .join(",");
-                const rhs = rhsRaw.trim().replace(selectedJob.datasetName + ".", "");
+                const rhs = rhsRaw.trim().replace(availableJobs[selectedJob].datasetName + ".", "");
                 return { lhs, rhs };
             });
+
             setFoundFDs(fdsArray);
             setShowFds(true);
             setSelectedIterationToShowFds(jobResultId);
-        }
-        catch (error) {
+        })
+        .catch(error => {
             console.error("Error fetching fds:", error);
-        }
-        finally {
+        })
+        .finally(() => {
             setLoading(false);
-        }
+        });
     };
 
     const resetForm = () => {
@@ -213,48 +237,40 @@ export default function JobsResults() {
         setSelectedIterationToShowFds("");
     }
 
-    const handleDownload = (iterationId) => {
-        if (!iterationId && !Number.isInteger(iterationId)){
+    const handleDownload = async (iterationId) => {
+        if (!Number.isInteger(iterationId)){
             alert("Invalid iteration ID.");
             return;
         }
-        {
-            fetch("http://localhost:8082/jobs/results/" + iterationId + "/fds", {
-                method: 'GET',
-            })
-            .then((response) => {
-                if (response.ok) {
-                    return response;
-                }
-                else {
-                    throw new Error("Network response was not ok");
-                }   
-            })
-            .then((response) => {
-                
-                const disposition = response.headers.get("Content-Disposition");
-                let filename = "job-" + selectedJob.id + "-" + selectedJobAlgorithm + "-runid-" + selectedIterationToShowFds + "-foundFDs.txt";
+        
+        fetch("http://localhost:8082/jobs/results/" + iterationId + "/fds")
+        .then(response => {
+            if (!response.ok) throw new Error("Failed to download found FDs");
+            return response.blob().then(blob => ({ response, blob }));
+        })
+        .then(({ response, blob }) => {
+            const disposition = response.headers.get("Content-Disposition") || response.headers.get("content-disposition");
+            let filename = "job-" + availableJobs[selectedJob].id + "-" + selectedJobAlgorithm + "-runid-" + iterationId + "-foundFDs.txt";
 
-                if (disposition && disposition.indexOf("filename") !== -1) {
-                    filename = disposition.split("filename=")[1].replace(/"/g, "").trim();
+            if (disposition && disposition.includes("filename")) {
+                const match = disposition.match(/filename="?([^";]+)"?/);
+                if (match) filename = match[1];
+            }
 
-                const url = window.URL.createObjectURL(new Blob([response.blob]));
-                const link = document.createElement('a');
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
 
-                link.href = url;
-                link.download = filename;
-                document.body.appendChild(link);
-                link.click();
-                link.remove();
-
-                window.URL.revokeObjectURL(url);
-                }
-            })
-            .catch((error) => {
-                console.error("Error downloading found FDs:", error);
-                alert(`Error downloading found FDs of a job"${selectedJob.id}".`);
-            });
-        }       
+            link.href = url;
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            window.URL.revokeObjectURL(url);
+        })
+        .catch(error => {
+            console.error("Error downloading found FDs:", error);
+            alert(`Error downloading found FDs of job ${availableJobs[selectedJob]?.id ?? "?"}.`);
+        });   
     }    
 
 
@@ -291,8 +307,8 @@ export default function JobsResults() {
                     label="Job"
                     onChange={(e) => setSelectedJob(e.target.value)}                        
                 >
-                    {availableJobs.map((job) => ( 
-                        <MenuItem key={job.id} value={job}>{job.jobName}</MenuItem>
+                    {Object.keys(availableJobs).map((name) => ( 
+                        <MenuItem key={name} value={name}>{name}</MenuItem>
                     ))}
                 </Select>
             </FormControl>
@@ -302,21 +318,21 @@ export default function JobsResults() {
                 <div> <CircularProgress /> Loading data... </div> 
                 : 
                 <>
-                    {jobStats && dataset ? 
+                    {selectedJob && dataset ? 
                         <>
                         <Stack spacing={5} direction="row" justifyContent="space-between" width={"100%"}>
-                            <h3 style={{marginLeft: 5}}>{selectedJob.jobName}</h3> 
+                            <h3 style={{marginLeft: 5}}>{selectedJob}</h3> 
                             <span
                                 style={{ fontWeight: "bold", textAlign: "right",
-                                    backgroundColor: selectedJob.status === "DONE" ? "green" : 
-                                           selectedJob.status === "RUNNING" ? "blue" :
-                                           selectedJob.status === "CANCELED" ? "orange" :
-                                           selectedJob.status === "FAILED" ? "red" :
+                                    backgroundColor: availableJobs[selectedJob].status === "DONE" ? "green" : 
+                                           availableJobs[selectedJob].status === "RUNNING" ? "blue" :
+                                           availableJobs[selectedJob].status === "CANCELED" ? "orange" :
+                                           availableJobs[selectedJob].status === "FAILED" ? "red" :
                                            "black",
                                     color: "white", padding: "5px", borderRadius: "8px"
                                  }}
                             >
-                                {selectedJob.status}
+                                {availableJobs[selectedJob].status}
                             </span>
                         </Stack>
                                                     
@@ -324,7 +340,7 @@ export default function JobsResults() {
                          <List sx={{ ...styleList}}>
                             <ListItem>
                                 <ListItemText primary="Job ID:" 
-                                secondary={selectedJob.id}
+                                secondary={availableJobs[selectedJob].id}
                                 slotProps={{
                                     secondary: { sx: {  textAlign: "right" } },
                                 }}
@@ -333,7 +349,7 @@ export default function JobsResults() {
                             <Divider variant="middle" component="li" />
                             <ListItem>
                                 <ListItemText primary="Job Name:" 
-                                secondary={selectedJob.jobName}
+                                secondary={selectedJob}
                                 slotProps={{
                                     secondary: { sx: {  textAlign: "right" } },
                                 }}
@@ -342,7 +358,7 @@ export default function JobsResults() {
                             <Divider variant="middle" component="li" />
                             <ListItem>
                                 <ListItemText primary="Job Description:" 
-                                secondary={selectedJob.jobDescription || "No description"}
+                                secondary={availableJobs[selectedJob].jobDescription || "No description"}
                                 slotProps={{
                                     secondary: { sx: {  textAlign: "right" } },
                                 }}
@@ -351,7 +367,7 @@ export default function JobsResults() {
                             <Divider variant="middle" component="li" />
                             <ListItem>
                                 <ListItemText primary="Algorithm:" 
-                                secondary={selectedJob.algorithm}
+                                secondary={availableJobs[selectedJob].algorithm}
                                 slotProps={{
                                     secondary: { sx: {  textAlign: "right" } },
                                 }}
@@ -360,7 +376,7 @@ export default function JobsResults() {
                             <Divider variant="middle" component="li" />
                             <ListItem>
                                 <ListItemText primary="Dataset:" 
-                                secondary={`${selectedJob.datasetName} (Attributes: ${dataset.numAttributes}, Entries: ${dataset.numEntries})`}
+                                secondary={`${availableJobs[selectedJob].datasetName} (Attributes: ${dataset.numAttributes}, Entries: ${dataset.numEntries})`}
                                 slotProps={{
                                     secondary: { sx: {  textAlign: "right" } },
                                 }}
@@ -369,7 +385,7 @@ export default function JobsResults() {
                             <Divider variant="middle" component="li" />
                             <ListItem>
                                <ListItemText primary="Repeat:" 
-                                secondary={selectedJob.repeat}
+                                secondary={availableJobs[selectedJob].repeat}
                                 slotProps={{
                                     secondary: { sx: {  textAlign: "right" } },
                                 }}
@@ -378,7 +394,7 @@ export default function JobsResults() {
                             <Divider variant="middle" component="li" />
                             <ListItem>
                                <ListItemText primary="LIMIT entries:" 
-                                secondary={selectedJob.limitEntries > 0 ? selectedJob.limitEntries : "undefined"}
+                                secondary={availableJobs[selectedJob].limitEntries > 0 ? availableJobs[selectedJob].limitEntries : "undefined"}
                                 slotProps={{
                                     secondary: { sx: {  textAlign: "right" } },
                                 }}
@@ -387,7 +403,7 @@ export default function JobsResults() {
                             <Divider variant="middle" component="li" />
                             <ListItem>
                                <ListItemText primary="SKIP entries:" 
-                                secondary={selectedJob.skipEntries > 0 ? selectedJob.skipEntries : "undefined"}
+                                secondary={availableJobs[selectedJob].skipEntries > 0 ? availableJobs[selectedJob].skipEntries : "undefined"}
                                 slotProps={{
                                     secondary: { sx: {  textAlign: "right" } },
                                 }}
@@ -396,7 +412,7 @@ export default function JobsResults() {
                             <Divider variant="middle" component="li" />
                             <ListItem>
                                <ListItemText primary="MAX LHS:" 
-                                secondary={selectedJob.maxLHS >= 0 ? selectedJob.maxLHS : "undefined"}
+                                secondary={availableJobs[selectedJob].maxLHS >= 0 ? availableJobs[selectedJob].maxLHS : "undefined"}
                                 slotProps={{
                                     secondary: { sx: {  textAlign: "right" } },
                                 }}
@@ -415,7 +431,7 @@ export default function JobsResults() {
             {/* Right side: stats, fds, graphs */}
             <Box sx={{ width: "100%", flex: 1, pl: 2, borderLeft: "1px solid grey", overflowX:"auto", overflowY:"auto" }}>
                 
-                { selectedJob != null && selectedJob.status === "DONE" ?
+                { selectedJob != null && selectedJob !== "" && availableJobs[selectedJob].status === "DONE" && jobStats !== null && graphData !== null ?
                 <>
                     <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
                         <Tabs value={selectedTabValue} onChange={(e, newValue) => setSelectedTabValue(newValue)} aria-label="basic tabs example">
@@ -433,7 +449,7 @@ export default function JobsResults() {
                                 label="Algorithm"
                                 onChange={(e) => setSelectedJobAlgorithm(e.target.value)}                   
                             >
-                                {selectedJob.algorithm.map((alg) => ( 
+                                {availableJobs[selectedJob].algorithm.map((alg) => ( 
                                     <MenuItem key={alg} value={alg}>{alg}</MenuItem>
                                 ))}
                             </Select>
@@ -623,7 +639,7 @@ function JobAlgorithmStats({ stats }) {
             <Divider variant="middle" component="li" />
             <ListItem>
                 <ListItemText primary="# found FDs:" 
-                secondary={stats.numFdsMin + " / " + stats.numFdsAvg + " / " + stats.numFdsMax}
+                secondary={stats.fdsMin + " / " + stats.fdsAvg + " / " + stats.fdsMax}
                 slotProps={{
                     secondary: { sx: {  textAlign: "right" } },
                 }}
@@ -661,6 +677,9 @@ function FDTable({ fds }) {
 
 function GeneratteCpuMemoryGraphs({ data }) {
 
+    const keys = Object.keys(data || {});
+    const total = keys.length;
+
     const xLabels = [];
     const graphDataCpu = {
         labels: xLabels,
@@ -671,10 +690,13 @@ function GeneratteCpuMemoryGraphs({ data }) {
         datasets: []
     }
 
-    for (const [key, value] of Object.entries(data)) {
+    keys.forEach((key, idx) =>  {
+        const value = data[key];
 
         const cpuData = [];
         const memoryData = [];
+
+        const color = generateColor(idx, total);
 
         for (let i = 0; i < value.length; i++) {
             const entry = value[i];
@@ -688,7 +710,8 @@ function GeneratteCpuMemoryGraphs({ data }) {
             {
                 label: key,
                 data: cpuData,
-                borderColor: "red"
+                borderColor: color,
+                backgroundColor: color
             }
         )
     
@@ -696,11 +719,13 @@ function GeneratteCpuMemoryGraphs({ data }) {
         graphDataMemory.datasets.push(
             {
                 label: key,
-                data: memoryData
+                data: memoryData,
+                borderColor: color,
+                backgroundColor: color,
             }
         )
 
-    }
+    });
 
 
     const optionsCpu = {
@@ -742,4 +767,7 @@ function GeneratteCpuMemoryGraphs({ data }) {
     )
 }
 
-
+function generateColor(index, total) {
+  const hue = (index * 360 / Math.max(1, total)) % 360;
+  return `hsl(${hue}, 70%, 50%)`;
+}

@@ -18,7 +18,7 @@ import {
 import CheckIcon from '@mui/icons-material/Check';
 import CloseIcon from '@mui/icons-material/Close';
 import { Navigate } from "react-router-dom";
-
+import { makeTextFileLineIterator } from "../utils/text-file-line-iterator.js";
 
 const allowedFileExts = ["csv", "json"];
 
@@ -36,7 +36,6 @@ export default function DatasetsAddPage(){
     const [preview, setPreview] = React.useState([]);
     
     const [submitted, setSubmitted] = React.useState(false);
-    const [datasetId, setDatasetId] = React.useState(null);
     const [datasetNames, setDatasetNames] = React.useState([]);
     const [loading, setLoading] = React.useState(true);
     const [isNameUnique, setIsNameUnique] = React.useState(true);
@@ -78,10 +77,7 @@ export default function DatasetsAddPage(){
         setDelim("");
         setHasHeader(false);
         setPreview([]);
-    }
-
-    const isFileNameValid = () => {
-        return fileName && isNameUnique;
+        setRawRows([]);
     }
 
     const handleFileInputChange = (event) => {  
@@ -100,48 +96,19 @@ export default function DatasetsAddPage(){
         if (ext === "csv") {
             
             readCsvFile(file);            
-        } else {
+        } 
+        else if (ext === "json"){
+            setHasHeader(true);
+            readJsonFile(file);
+        }
+        else {
             console.error("This file extension is not allowed");
             alert("ERROR: This file extension is not allowed");
             return;
         }
 
         setFileName(baseName);
-        setFileFormat(ext);
-        setPreview([]);
-        
-    }
-
-    async function* makeTextFileLineIterator(fileURL) {
-        const utf8Decoder = new TextDecoder("utf-8");
-        let response = await fetch(fileURL);
-        let reader = response.body.getReader();
-        let { value: chunk, done: readerDone } = await reader.read();
-        chunk = chunk ? utf8Decoder.decode(chunk, { stream: true }) : "";
-
-        let re = /\r?\n/g;
-        let startIndex = 0;
-
-        for (;;) {
-            let result = re.exec(chunk);
-            if (!result) {
-            if (readerDone) {
-                break;
-            }
-            let remainder = chunk.substring(startIndex);
-            ({ value: chunk, done: readerDone } = await reader.read());
-            chunk =
-                remainder + (chunk ? utf8Decoder.decode(chunk, { stream: true }) : "");
-            startIndex = re.lastIndex = 0;
-            continue;
-            }
-            yield chunk.substring(startIndex, result.index);
-            startIndex = re.lastIndex;
-        }
-        if (startIndex < chunk.length) {
-            // last line didn't end in a newline char
-            yield chunk.substring(startIndex);
-        }
+        setFileFormat(ext);        
     }
 
     const readCsvFile = async (file) => {
@@ -165,6 +132,23 @@ export default function DatasetsAddPage(){
         setRawRows(rows);
         setPreview(rows.map((row) => row.split(",")));
 
+    }
+
+    const readJsonFile = (file) => {
+
+        fetch(URL.createObjectURL(file))
+        .then(data => data.json())
+        .then(data => {
+            const subset = data.slice(0, 10);
+            const headers = Array.from(new Set(subset.flatMap(obj => Object.keys(obj))));
+            const rows = subset.map(obj => headers.map(key => obj[key] ?? ""));
+
+            setRawRows([headers, ...rows]);
+            setPreview([headers, ...rows]);
+        })
+        .catch((error) => {
+            console.log("Error loading JSON data preview: ", error);
+        });
     }
 
     const handleSubmit = (event) => {
@@ -193,14 +177,14 @@ export default function DatasetsAddPage(){
         }
 
         fetch(apiUrl, {
-        method: "POST",
-        body: formData,
+            method: "POST",
+            body: formData,
         })
         .then((response) => {
             if (response.ok) {
                 //alert("Dataset saved successfully", response);
                 setSubmitted(true);
-            return response.json();
+                return response.json();
             } 
             else if (response.status === 404) {
                 throw new Error("Dataset not found");
@@ -259,7 +243,7 @@ export default function DatasetsAddPage(){
                 </FormControl>
             </Tooltip>
             {/* Choose file name */}
-            <Tooltip title="User given name of the dataset used as identifier. MUST BE UNIQUE">
+            <Tooltip title="Name of the dataset used as identifier. MUST BE UNIQUE">
                 <FormControl fullWidth>
                 
                 <TextField
@@ -288,7 +272,7 @@ export default function DatasetsAddPage(){
                 </FormControl>
             </Tooltip>
             {/* Description input */}
-            <Tooltip title="User given description of the dataset, data origin, etc.">
+            <Tooltip title="Description of the dataset, data origin, etc.">
                 <FormControl fullWidth>
                 <TextField
                     name="description"
@@ -315,6 +299,7 @@ export default function DatasetsAddPage(){
                     required
                 >
                     <MenuItem value={"csv"}>CSV</MenuItem>
+                    <MenuItem value={"json"}>JSON</MenuItem>
                 </Select>
                 </FormControl>
             </Tooltip>
@@ -363,7 +348,7 @@ export default function DatasetsAddPage(){
             )}
             <Stack spacing={5} direction="row">
                 <Button variant="contained" type="submit">
-                {datasetId ? "Update" : "Submit"}
+                Submit
                 </Button>
                 <Button type="reset" variant="outlined" >Cancel</Button>
             </Stack>
@@ -371,6 +356,19 @@ export default function DatasetsAddPage(){
             </Box>
 
             {/* Right side: file preview*/}
+            <DatasetPreview preview={preview} hasHeader={hasHeader} />
+
+        </Box>
+        </>
+    );
+
+}
+
+
+function DatasetPreview({preview, hasHeader}){
+
+    return(
+        <>
             <Box sx={{ flex: 1, pl: 2, borderLeft: "1px solid grey", overflowX:"auto" }}>
                 <h3>File preview</h3>
                 {preview && preview.length > 0 ? (
@@ -426,14 +424,7 @@ export default function DatasetsAddPage(){
                     <span>No preview available. Select file.</span>
                 )}
             </Box>
-
-        </Box>
         </>
     );
-
-
 }
-
-
-
 

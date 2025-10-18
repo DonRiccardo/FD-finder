@@ -2,10 +2,7 @@ package com.example.jobservice.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
-import jakarta.validation.constraints.Max;
-import jakarta.validation.constraints.NotEmpty;
-import jakarta.validation.constraints.Positive;
-import jakarta.validation.constraints.PositiveOrZero;
+import jakarta.validation.constraints.*;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -29,8 +26,10 @@ public class Job {
     @Max(20)
     private int repeat;
     @NotEmpty
+    @NotNull
     private Long dataset;
     @NotEmpty
+    @NotNull
     private String datasetName;
     @PositiveOrZero
     private int limitEntries = -1;
@@ -41,7 +40,6 @@ public class Job {
     @JsonIgnoreProperties("job")
     @OneToMany(mappedBy = "job", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<JobResult> jobResults = new ArrayList<>();
-    // TODO premenna na ulozenie vypocitanych statistik
 
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

@@ -59,7 +59,8 @@ public class DatasetController {
         dataset.setSize(file.getSize());
         dataset.setSavedAt(response.savedAt());
 
-        CompletableFuture<DatasetService.FileNumbers> fn = datasetService.processNewCSVDataset(dataset);
+        CompletableFuture<DatasetService.FileNumbers> fn = datasetService.processNewDatasetNumbers(dataset);
+
         try{
             dataset.setNumAttributes(fn.get().numAttributes());
             dataset.setNumEntries(fn.get().numEntries());
@@ -68,7 +69,6 @@ public class DatasetController {
             dataset.setNumAttributes(0);
             dataset.setNumEntries(0L);
         }
-
 
         EntityModel<Dataset> entityModel = datasetAssembler.toModel(datasetRepository.save(dataset));
 

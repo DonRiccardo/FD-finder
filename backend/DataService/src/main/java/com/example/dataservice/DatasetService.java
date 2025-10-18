@@ -1,5 +1,8 @@
 package com.example.dataservice;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParser;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.scheduling.annotation.Async;
@@ -50,7 +53,18 @@ public class DatasetService {
     ) implements Serializable {};
 
     @Async
-    public CompletableFuture<FileNumbers> processNewCSVDataset(Dataset dataset){
+    public CompletableFuture<FileNumbers> processNewDatasetNumbers(Dataset dataset){
+        if (dataset.getFileFormat() == FileFormat.CSV) {
+            return CompletableFuture.completedFuture(processNewCSVDataset(dataset));
+
+        } else if (dataset.getFileFormat() == FileFormat.JSON) {
+            return CompletableFuture.completedFuture(processNewJsonDataset(dataset));
+        }
+
+        return CompletableFuture.completedFuture(new FileNumbers(0, 0L));
+    }
+
+    private FileNumbers processNewCSVDataset(Dataset dataset){
         int numAttributes = 0;
         long numEntries = 0L;
 
@@ -72,7 +86,34 @@ public class DatasetService {
 
         }
 
-        return CompletableFuture.completedFuture(new FileNumbers(numAttributes, numEntries));
+        return new FileNumbers(numAttributes, numEntries);
+    }
+
+    private FileNumbers processNewJsonDataset(Dataset dataset){
+        int numAttributes = 0;
+        long numEntries = 0L;
+
+        try{
+            Path filePath = getFilePath(dataset.getHash(), dataset.getFileFormat(), dataset.getSavedAt());
+            try(BufferedReader br = Files.newBufferedReader(filePath)){
+
+                JsonElement jsonElement = JsonParser.parseReader(br);
+                JsonArray jsonArray = jsonElement.getAsJsonArray();
+
+                numEntries = jsonArray.size();
+
+                for (int i = 0; i < jsonArray.size(); i++) {
+                    int att = jsonArray.get(i).getAsJsonObject().size();
+                    if (numAttributes < att) numAttributes = att;
+
+                }
+            }
+        }
+        catch (Exception e){
+
+        }
+
+        return new FileNumbers(numAttributes, numEntries);
     }
 
     public Resource getFile(Dataset dataset) throws IOException {

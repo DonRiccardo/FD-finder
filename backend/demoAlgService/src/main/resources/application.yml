@@ -1,0 +1,6 @@
+spring:
+  application:
+    name: algservice-demo
+server:
+  port: 8084
+

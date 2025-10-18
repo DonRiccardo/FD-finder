@@ -1,9 +1,6 @@
 package com.example.jobservice;
 
-import com.example.jobservice.model.Job;
-import com.example.jobservice.model.JobResult;
-import com.example.jobservice.model.JobStatus;
-import com.example.jobservice.model.MetricPoint;
+import com.example.jobservice.model.*;
 import jakarta.validation.Valid;
 import org.springframework.cloud.client.discovery.DiscoveryClient;
 import org.springframework.core.io.Resource;
@@ -36,14 +33,14 @@ public class JobController {
     private final JobService jobService;
     private final JobRepository jobRepository;
     private final JobResultsRepository jobResultsRepository;
-    private final MetricPoint.JobModelAssembler jobAssembler;
-    private final JobStatus.JobResultsModelAssembler jobResultsAssembler;
+    private final JobModelAssembler jobAssembler;
+    private final JobResultsModelAssembler jobResultsAssembler;
     private final DiscoveryClient discoveryClient;
     private final RestClient  restClient;
     private final SimpMessagingTemplate simpMessagingTemplate;
 
     public JobController(JobService jobService , JobRepository jobRepository, JobResultsRepository jobResultsRepository,
-                         MetricPoint.JobModelAssembler jobAssembler, JobStatus.JobResultsModelAssembler jobResultsAssembler ,
+                         JobModelAssembler jobAssembler, JobResultsModelAssembler jobResultsAssembler ,
                          DiscoveryClient discoveryClient, RestClient.Builder restClientBuilder,
                          SimpMessagingTemplate simpMessagingTemplate) {
         this.jobService = jobService;
@@ -92,10 +89,24 @@ public class JobController {
         Job job = jobRepository.findById(id)
                 .orElseThrow(() -> new JobNotFoundException(id));
 
-        if (job.isJobRunning()){
-            job.setStatus(JobStatus.CANCELLED);
-            // TODO
-            return ResponseEntity.ok(jobAssembler.toModel(jobRepository.save(job)));
+        if (job.isJobRunning()) {
+            job.setStatusToIterationsAndJob(JobStatus.CANCELLED);
+            Job newJob = jobRepository.save(job);
+
+            for (String alg : job.getAlgorithm()) {
+                try {
+
+                    jobService.cancelJobAtAlgorithm(alg, newJob, discoveryClient, restClient);
+                }
+                catch (Exception e) {
+
+                    newJob.setAlgorithmIterationStatus(alg, JobStatus.FAILED);
+                    newJob = jobRepository.save(newJob);
+                }
+
+            }
+
+            return ResponseEntity.ok(jobAssembler.toModel(newJob));
         }
 
         return ResponseEntity
@@ -111,9 +122,22 @@ public class JobController {
 
         Job job = jobRepository.findById(id)
                 .orElseThrow(() -> new JobNotFoundException(id));
-
+        Job newJob;
         if (job.isJobRunning()){
-            // TODO
+
+            for (String alg : job.getAlgorithm()) {
+                try {
+
+                    jobService.cancelJobAtAlgorithm(alg, job, discoveryClient, restClient);
+                }
+                catch (Exception e) {
+
+                    job.setAlgorithmIterationStatus(alg, JobStatus.FAILED);
+                    newJob = jobRepository.save(job);
+
+                }
+
+            }
         }
 
         jobRepository.deleteById(id);
@@ -264,7 +288,7 @@ public class JobController {
             Job job = jobResult.getJob();
             if (job.setAndChangedJobStatusBasedOnIterations()) jobRepository.save(job);
 
-            simpMessagingTemplate.convertAndSend("/topic/jobs", job);
+            simpMessagingTemplate.convertAndSend("/topic/jobs", jobAssembler.toModel(job));
 
             return ResponseEntity.ok(jobResultsAssembler.toModel(jobResultsRepository.save(jobResult)));
         }

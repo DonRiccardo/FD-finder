@@ -68,9 +68,20 @@ public class JobService {
 
         ServiceInstance serviceInstance = discoveryClient.getInstances("algservice-" + alg).getFirst();
         ResponseEntity<Void> response = restClient.post()
-                .uri(serviceInstance.getUri() + "/fdep/start/" + job.getId())
+                .uri(serviceInstance.getUri() + "/" + alg + "/start/" + job.getId())
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(job)
+                .accept(MediaType.APPLICATION_JSON)
+                .retrieve()
+                .toBodilessEntity();
+    }
+
+    public void cancelJobAtAlgorithm(String alg, Job job, DiscoveryClient discoveryClient, RestClient restClient) {
+
+        ServiceInstance serviceInstance = discoveryClient.getInstances("algservice-" + alg).getFirst();
+        ResponseEntity<Void> response = restClient.post()
+                .uri(serviceInstance.getUri() + "/" + alg + "/cancel/" + job.getId())
+                .contentType(MediaType.APPLICATION_JSON)
                 .accept(MediaType.APPLICATION_JSON)
                 .retrieve()
                 .toBodilessEntity();

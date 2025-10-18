@@ -1,25 +1,17 @@
 import React, { useEffect, useState } from "react";
 import { Button, Box, Stack, IconButton } from "@mui/material";
 import {
-    DataGrid,
-    Toolbar,
-    ToolbarButton,
-    ColumnsPanelTrigger,
-    FilterPanelTrigger,
-    GridActionsCellItem
+    DataGrid, Toolbar, ToolbarButton, ColumnsPanelTrigger,
+    FilterPanelTrigger, GridActionsCellItem
 } from "@mui/x-data-grid";
 import { Link } from "react-router-dom";
 import AddIcon from "@mui/icons-material/Add";
 import DeleteIcon from '@mui/icons-material/Delete';
-import EditIcon from '@mui/icons-material/Edit';
-import DownloadIcon from '@mui/icons-material/Download';
 import FindInPageIcon from '@mui/icons-material/FindInPage';
 import ViewColumnIcon from '@mui/icons-material/ViewColumn';
 import FilterListIcon from '@mui/icons-material/FilterList';
 import Tooltip from '@mui/material/Tooltip';
 import CancelIcon from '@mui/icons-material/Cancel';
-import SearchIcon from '@mui/icons-material/Search';
-import Typography from '@mui/material/Typography';
 import Badge from '@mui/material/Badge';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import SockJS  from "sockjs-client/dist/sockjs";
@@ -31,25 +23,24 @@ export default function JobssAll() {
     const [rows, setRows] = useState([]);
 
     const fetchJobs = React.useCallback(async () => {
-        try {
-            fetch("http://localhost:8082/jobs")
-            .then((response) => response.json())
-            .then((data) => {
+        
+        fetch("http://localhost:8082/jobs")
+        .then((response) => {
+            if(!response.ok) Promise.reject(response);
+            return response.json();
+        })
+        .then((data) => {
 
-                const jobs= data._embedded?.jobList || [];
+            const jobs= data._embedded?.jobList || [];
 
-                const formatted = jobs.map((job) => (formatJobMetadaata(job)));
+            const formatted = jobs.map((job) => (formatJobMetadaata(job)));
 
-                setRows(formatted);
-            })
-            .catch((error) => {
-                console.error("Error fetching datasets:", error);
-            });
-            
-        }
-        catch (error) {
+            setRows(formatted);
+        })
+        .catch((error) => {
             console.error("Error fetching datasets:", error);
-        }
+        });            
+        
     }, []);
 
     useEffect(() => {
@@ -62,11 +53,15 @@ export default function JobssAll() {
         webSocketFactory: () => socket,
         reconnectDelay: 5000,
         onConnect: () => {
-            console.log("WS-Connected");
 
             stompClient.subscribe("/topic/jobs", (message) => {
-                const jobUpdate = formatJobMetadaata(JSON.parse(message.body));
-                
+                const obtainedData = JSON.parse(message.body);
+                const _links = Object.fromEntries(
+                    obtainedData.links?.map(link => [link.rel, { href: link.href }])
+                );
+                obtainedData._links = _links;
+                const jobUpdate = formatJobMetadaata(obtainedData);
+                console.log("Update Job: ", jobUpdate);
                 setRows((prev) => {
                     const index = prev.findIndex((row) => row.id === jobUpdate.id);
                     if (index !== -1) {
@@ -96,7 +91,6 @@ export default function JobssAll() {
             })
             .then((response) => {
                 if (response.ok) {
-                    //alert(`Job "${row.id}" started successfully.`);
                     fetchJobs(); 
                 } else {
                     alert(`Failed to start job "${row.id}".`);
@@ -116,7 +110,6 @@ export default function JobssAll() {
             })
             .then((response) => {
                 if (response.ok) {
-                    //alert(`Job "${row.id}" cancelled successfully.`);
                     fetchJobs();
                 } else {
                     alert(`Failed to cancel job "${row.id}".`);
@@ -154,9 +147,10 @@ export default function JobssAll() {
                 </Tooltip>
             ]
         },
-        { field: "id", headerName: "ID", minWidth: 5, type: "number" },
+        { field: "id", headerName: "ID", width: 10, type: "number" },
+        { field: "jobName", headerName: "Name", width: 100 },
+        { field: "jobDescription", headerName: "Description", minWidth: 100 },
         { field: "algorithm", headerName: "Algorithm", minWidth: 20 },
-        { field: "dataset", headerName: "Dataset ID", minWidth: 10, type: "number" },
         { field: "datasetName", headerName: "Dataset Name", minWidth: 150 },
         { field: "status", headerName: "Status", minWidth: 40 },    
         { field: "limitEntries", headerName: "LIMIT REC", minWidth: 50, type: "number",
@@ -173,37 +167,18 @@ export default function JobssAll() {
             valueGetter: (value) => {
                 return value > 0 ? value : "-";
             }
-         },
-        { field: "output", headerName: "Output", minWidth: 10 },
-        { field: "createdAt", 
-            headerName: "Created At", 
-            minWidth: 150,
-            type: "dateTime"
-        },        
-        { field: "updatedAt", 
-            headerName: "Updated At", 
-            width: 150,
-            type: "dateTime",
-        },        
+         },        
        {
         field: "actions2",
         type: "actions",
         minWidth: 180,
         renderCell: (params) => (
             <>
-                <Link to={"/jobs/${params.id}"}>
-                    <Tooltip title="Edit Job">
-                    <IconButton variant="contained" size="small" sx={{ mr: 1 }}  aria-label="edit">
-                        <EditIcon />
-                    </IconButton>
-                    </Tooltip>
-                </Link>
-                <Link to={"/jobs"}>
-                    <Tooltip title={params.row.canShowResults ? "Show details & results  " : "No results to show"}>
+                <Link to={"/jobs/results/" + params.row.id}>
+                    <Tooltip title="Show details & results  ">
                     <IconButton variant="outlined" size="small" sx={{ mr: 1 }} aria-label="create job">
                         <FindInPageIcon 
                             aria-label="show results"
-                            disabled={params.row.canShowResults}
                             onClick={() => {}}
                         />
                     </IconButton>
@@ -217,7 +192,7 @@ export default function JobssAll() {
                         size="small"
                         color="error"
                         sx={{ mr: 1 }}
-                        disabled={params.row.canDelete}
+                        disabled={!params.row.canDelete}
                         onClick={() => handleDelete(params.row)}
                     >
                         <DeleteIcon />
@@ -226,7 +201,18 @@ export default function JobssAll() {
                 </Tooltip>
             </>
         )
-       }
+       },
+       
+        { field: "createdAt", 
+            headerName: "Created At", 
+            minWidth: 150,
+            type: "dateTime"
+        },        
+        { field: "updatedAt", 
+            headerName: "Updated At", 
+            width: 150,
+            type: "dateTime",
+        },
     ];
 
     const handleDelete = (row) => {
@@ -286,13 +272,12 @@ export default function JobssAll() {
 
 
 function formatJobMetadaata(job) {
-
+    console.log("Obtained Job:", job);
     return {
         ...job,
         canDelete: Boolean(job._links?.delete),
         canCancel: Boolean(job._links?.cancel),
         canRun: Boolean(job._links?.start),
-        canShowResults: Boolean(job._links?.results),
         createdAt: job.createdAt ? new Date(job.createdAt.replace(/(\.\d{3})\d+/, "$1")) : null,
         updatedAt: job.updatedAt ? new Date(job.updatedAt.replace(/(\.\d{3})\d+/, "$1")) : null,
     };

@@ -24,7 +24,9 @@ function App() {
             <Route path="/datasets/upload" element={<DatasetsAdd />} />
             <Route path="/jobs" element={<Jobs />} />
             <Route path="/jobs/create" element={<JobsAdd />} />
+            <Route path="/jobs/create/:datasetId" element={<JobDataset />} />
             <Route path="/jobs/results" element={<JobResult />} />
+            <Route path="/jobs/results/:jobId" element={<JobResultId />} />
           </Routes>
         </Box>
     </>
@@ -109,12 +111,36 @@ function JobsAdd() {
   ) 
 }
 
+function JobDataset() {
+  const {datasetId} = useParams();
+  return (
+    <>
+      <main>
+        <h1>Edit Job</h1>
+        <JobsCreate datasetId={datasetId} />
+      </main>
+    </>
+  )
+}
+
 function JobResult() {
   return(
     <>
       <main>
         <h1>Job Results</h1>
         <JobsResults />
+      </main>
+    </>
+  )
+}
+
+function JobResultId() {
+  const {jobId} = useParams();
+  return(
+    <>
+      <main>
+        <h1>Job Results</h1>
+        <JobsResults jobId={jobId}/>
       </main>
     </>
   )
