@@ -76,7 +76,7 @@ public class DemoAlgService {
             for (JobDto job : this.queue) {
 
                 if (job.getId() == jobId) {
-                    System.out.println("DEP-MINER - CANCEL Job = removed from queue: " + job.getId());
+                    System.out.println("DEMO ALG - CANCEL Job = removed from queue: " + job.getId());
                     this.queue.remove(job);
                     break;
                 }
@@ -109,7 +109,7 @@ public class DemoAlgService {
                 //t.printStackTrace();
             }
             finally {
-                System.out.println("FDEP - FINISHED JOB: " + job.getId());
+                System.out.println("DEMO ALG - FINISHED JOB: " + job.getId());
 
                 running.set(false);
                 cancelled.set(false);
@@ -384,7 +384,7 @@ public class DemoAlgService {
     private Path getFdsResultFilePath(JobResult jobResult, long jobId) {
         // fileName: job-ID-fdep-run-#-foundFDs.txt
         return Paths.get("tmp/results/job-" + jobId
-                + "-DEMO ALG-run-" + jobResult.getIteration() + "-foundFDs.txt");
+                + "-DEMOALG-run-" + jobResult.getIteration() + "-foundFDs.txt");
     }
 
 

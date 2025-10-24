@@ -132,7 +132,7 @@ public class Job {
                 this.status == JobStatus.FAILED);
     }
 
-    public boolean setAndChangedJobStatusBasedOnIterations() {
+    public boolean setAndChangeJobStatusBasedOnIterations() {
 
         JobStatus oldJobStatus = this.status;
 
@@ -165,7 +165,7 @@ public class Job {
             }
         }
 
-        setAndChangedJobStatusBasedOnIterations();
+        setAndChangeJobStatusBasedOnIterations();
     }
 
     public List<String> getAlgorithm() {

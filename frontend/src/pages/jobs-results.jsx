@@ -18,6 +18,7 @@ import {
   Title, Tooltip as ChartToolTip, Legend,
 } from 'chart.js';
 import { Line } from 'react-chartjs-2';
+import { websocketListen } from "../utils/websocket-jobs";
 
 ChartJS.register(
   CategoryScale,
@@ -85,10 +86,66 @@ export default function JobsResults({ jobId }) {
         (r) => r.algorithm === selectedJobAlgorithm
     );
 
-    
+    const fetchResultsOfJob = async function () {
+            
+    if (!selectedJob) {
+        resetForm();
+        setFetchingResults(false);
+        return;
+    }
+    const job = availableJobs[selectedJob];
+
+    fetch("http://localhost:8081/datasets/" + job.dataset)
+    .then(res => {
+        if (!res.ok) throw new Error("Failed to fetch dataset metadata");
+        return res.json();
+    })
+    .then(datasetMetadata => {
+        setDataset(datasetMetadata);
+
+        if (job.status === "DONE") {
+            return Promise.all([
+                fetch("http://localhost:8082/jobs/" + job.id + "/results")
+                .then(r => { 
+                    if (!r.ok) throw new Error("Failed to fetch job stats"); 
+                    return r.json();
+                }),
+                fetch("http://localhost:8082/jobs/" + job.id + "/results/graphdata")
+                .then(r => { 
+                    if (!r.ok) throw new Error("Failed to fetch graph data"); 
+                    return r.json(); 
+                })
+            ])
+            .then(([statsJson, graphJson]) => {
+                const formattedStats = {};
+
+                for (const [key, value] of Object.entries(statsJson || {})) {
+                
+                    formattedStats[key] = formatJobAlgorithmStats(value);
+                }
+
+                setJobStats(formattedStats);
+                setGraphData(graphJson);
+            });
+        } 
+        else {
+
+            setJobStats(null);
+            setGraphData(null);
+        }
+    })
+    .catch((error) => {
+        console.error("Error fetching job results or dataset:", error);
+    })
+    .finally(() => {
+        setFetchingResults(false);
+    });
+}
+
 
     useEffect(() => {
         setLoading(true);
+        websocketListen(setAvailableJobs);
 
         async function fetchJobs() {
             
@@ -121,77 +178,29 @@ export default function JobsResults({ jobId }) {
     }, []);
 
     useEffect(() => {        
+        if ((jobStats === null || graphData === null) && selectedJob && availableJobs[selectedJob].status === "DONE"){
+            console.log("loading data after change of selected job");
+            //setFetchingResults(true);
+            //resetForm();             
+            fetchResultsOfJob();
+        }
+    }, [availableJobs]);
+
+    useEffect(() => {      
         if (jobId && availableJobs[Object.keys(availableJobs)[0]]) {
             const found = Object.values(availableJobs).find(j => j.id === parseInt(jobId, 10));
-            if (found) setSelectedJob(found.jobName);          
+            if (found) setSelectedJob(found.jobName);        
         }
     }, [jobId, availableJobs]);
 
     useEffect(() => {
         setFetchingResults(true);
-        resetForm();
-
-        async function fetchResultsOfJob() {
-            
-            if (!selectedJob) {
-                resetForm();
-                return;
-            }
-            const job = availableJobs[selectedJob];
-
-            fetch("http://localhost:8081/datasets/" + job.dataset)
-            .then(res => {
-                if (!res.ok) throw new Error("Failed to fetch dataset metadata");
-                return res.json();
-            })
-            .then(datasetMetadata => {
-                setDataset(datasetMetadata);
-
-                if (job.status === "DONE") {
-                    return Promise.all([
-                        fetch("http://localhost:8082/jobs/" + job.id + "/results")
-                        .then(r => { 
-                            if (!r.ok) throw new Error("Failed to fetch job stats"); 
-                            return r.json();
-                        }),
-                        fetch("http://localhost:8082/jobs/" + job.id + "/results/graphdata")
-                        .then(r => { 
-                            if (!r.ok) throw new Error("Failed to fetch graph data"); 
-                            return r.json(); 
-                        })
-                    ])
-                    .then(([statsJson, graphJson]) => {
-                        const formattedStats = {};
-
-                        for (const [key, value] of Object.entries(statsJson || {})) {
-                        
-                            formattedStats[key] = formatJobAlgorithmStats(value);
-                        }
-
-                        setJobStats(formattedStats);
-                        setGraphData(graphJson);
-                    });
-                } 
-                else {
-
-                    setJobStats(null);
-                    setGraphData(null);
-                }
-            })
-            .catch((error) => {
-                console.error("Error fetching job results or dataset:", error);
-            })
-            .finally(() => {
-                setFetchingResults(false);
-            });
-        }
-           
-        
-        fetchResultsOfJob() ;
+        resetForm();             
+        fetchResultsOfJob();
     }, [selectedJob]);
 
     const handleShowFDs = async (jobResultId) => {
-        setLoading(true);
+        
         fetch("http://localhost:8082/jobs/results/" + jobResultId + "/fds")
         .then(res => { 
             if (!res.ok) throw new Error("Failed to fetch FDs"); return res.text(); 
@@ -314,7 +323,7 @@ export default function JobsResults({ jobId }) {
             </FormControl>
 
             {/* Details */}
-            {loading || fetchingResults? 
+            {loading ? 
                 <div> <CircularProgress /> Loading data... </div> 
                 : 
                 <>
@@ -367,7 +376,7 @@ export default function JobsResults({ jobId }) {
                             <Divider variant="middle" component="li" />
                             <ListItem>
                                 <ListItemText primary="Algorithm:" 
-                                secondary={availableJobs[selectedJob].algorithm}
+                                secondary={availableJobs[selectedJob].algorithm.join(", ") || ""}
                                 slotProps={{
                                     secondary: { sx: {  textAlign: "right" } },
                                 }}
@@ -429,7 +438,7 @@ export default function JobsResults({ jobId }) {
             </Box>
 
             {/* Right side: stats, fds, graphs */}
-            <Box sx={{ width: "100%", flex: 1, pl: 2, borderLeft: "1px solid grey", overflowX:"auto", overflowY:"auto" }}>
+            <Box sx={{ width: "100%", maxHeight: 800 , flex: 1, pl: 2, borderLeft: "1px solid grey", overflowX:"auto", overflowY:"auto" }}>
                 
                 { selectedJob != null && selectedJob !== "" && availableJobs[selectedJob].status === "DONE" && jobStats !== null && graphData !== null ?
                 <>
@@ -447,7 +456,10 @@ export default function JobsResults({ jobId }) {
                                 labelId="algorithm-label"
                                 value={selectedJobAlgorithm}
                                 label="Algorithm"
-                                onChange={(e) => setSelectedJobAlgorithm(e.target.value)}                   
+                                onChange={(e) => {
+                                    setSelectedJobAlgorithm(e.target.value);
+                                    handleBack();
+                                }}                   
                             >
                                 {availableJobs[selectedJob].algorithm.map((alg) => ( 
                                     <MenuItem key={alg} value={alg}>{alg}</MenuItem>
@@ -561,7 +573,8 @@ export default function JobsResults({ jobId }) {
                     
                 </>                
                 :
-                <p>Nothing to show</p>
+                <>{fetchingResults ? <div> <CircularProgress /> Loading data... </div> : <p>Nothing to show</p>}</>
+                
                 }
                 
             </Box>
@@ -674,6 +687,7 @@ function FDTable({ fds }) {
     </Table>
   );
 }
+
 
 function GeneratteCpuMemoryGraphs({ data }) {
 

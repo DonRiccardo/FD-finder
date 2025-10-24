@@ -284,13 +284,14 @@ public class JobController {
 
         if (jobResult.isJobRunning() && (jobStatus == JobStatus.RUNNING || jobStatus == JobStatus.DONE || jobStatus == JobStatus.FAILED)) {
             jobResult.setStatus(jobStatus);
+            jobResultsRepository.save(jobResult);
 
             Job job = jobResult.getJob();
-            if (job.setAndChangedJobStatusBasedOnIterations()) jobRepository.save(job);
+            if (job.setAndChangeJobStatusBasedOnIterations()) jobRepository.save(job);
 
             simpMessagingTemplate.convertAndSend("/topic/jobs", jobAssembler.toModel(job));
 
-            return ResponseEntity.ok(jobResultsAssembler.toModel(jobResultsRepository.save(jobResult)));
+            return ResponseEntity.ok(jobResultsAssembler.toModel(jobResult));
         }
 
 

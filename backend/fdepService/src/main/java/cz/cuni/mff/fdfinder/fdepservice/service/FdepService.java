@@ -116,7 +116,7 @@ public class FdepService {
             }
             catch (Throwable t) {
                 System.out.println("FDEP - ERROR: " + t.getMessage());
-                t.printStackTrace();
+                //t.printStackTrace();
             }
             finally {
                 System.out.println("FDEP - FINISHED JOB: " + job.getId());
@@ -136,10 +136,9 @@ public class FdepService {
             List<_FunctionalDependency> foundFds
     ) implements Serializable {};
 
-    private List<JobResultsFDs> runJob(JobDto job) {
+    private void runJob(JobDto job) {
         ServiceInstance serviceInstanceJob = discoveryClient.getInstances("jobservice").getFirst();
 
-        List<JobResultsFDs> jobResultsFDs = generateOutputJobResults(job.getJobResults());
         JobResult currentJobResult = null;
         DatasetData datasetData = null;
 
@@ -178,7 +177,6 @@ public class FdepService {
 
             Files.deleteIfExists(datasetData.targetPathDataset);
 
-            return jobResultsFDs;
         }
         catch (IOException e){
 
@@ -194,8 +192,14 @@ public class FdepService {
 
             }
             else if (currentJobResult != null) {
-                System.err.println("Error starting job " + currentJobResult.getId() + ": " + e.getMessage());
+                System.err.println("Error starting job, current result ID: " + currentJobResult.getId() + ": " + e.getMessage());
                 updateStatus(currentJobResult.getId(), JobStatus.FAILED, serviceInstanceJob);
+            }
+            else {
+                System.err.println("Error starting job " + currentJob.getId() + ": " + e.getMessage());
+                for (JobResult jobResult : job.getJobResults()) {
+                    updateStatus(jobResult.getId(), JobStatus.FAILED, serviceInstanceJob);
+                }
             }
 
         }
@@ -204,7 +208,6 @@ public class FdepService {
             deleteDataset(datasetData);
         }
 
-        return null;
     }
 
     public record DatasetData(

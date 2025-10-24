@@ -34,7 +34,8 @@ public abstract class _Input implements Serializable {
     protected List<_FunctionalDependency> foundFds;
 
 
-    public _Input(String filePath, String tableName, boolean hasHeader, String delim, int skip, int limit, SparkSession spark) throws IOException {
+    public _Input(String filePath, String tableName, boolean hasHeader, String delim, int skip,
+                  int limit, SparkSession spark) throws IOException {
 
         this.filePath = filePath;
         Path p = Paths.get(this.filePath);
@@ -57,7 +58,7 @@ public abstract class _Input implements Serializable {
 
     private void prepareData() {
 
-        if (this.skip >= 0) {
+        if (this.skip > 0) {
 
             this.df = this.df.offset(this.skip);
         }

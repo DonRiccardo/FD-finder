@@ -119,7 +119,7 @@ public class DepMinerService {
             }
             catch (Throwable t) {
                 System.out.println("DEP-MINER - ERROR: " + t.getMessage());
-                t.printStackTrace();
+                //t.printStackTrace();
             }
             finally {
                 System.out.println("DEP-MINER - FINISHED JOB: " + job.getId());
@@ -139,10 +139,9 @@ public class DepMinerService {
             List<_FunctionalDependency> foundFds
     ) implements Serializable {};
 
-    private List<JobResultsFDs> runJob(JobDto job) {
+    private void runJob(JobDto job) {
         ServiceInstance serviceInstanceJob = discoveryClient.getInstances("jobservice").getFirst();
 
-        List<JobResultsFDs> jobResultsFDs = generateOutputJobResults(job.getJobResults());
         JobResult currentJobResult = null;
         DatasetData datasetData = null;
 
@@ -180,7 +179,6 @@ public class DepMinerService {
 
             }
 
-            return jobResultsFDs;
         }
         catch (IOException e){
 
@@ -196,12 +194,14 @@ public class DepMinerService {
 
             }
             else if (currentJobResult != null) {
-                System.err.println("Error starting job " + currentJobResult.getId() + ": " + e.getMessage());
+                System.err.println("Error starting job, current result ID: " + currentJobResult.getId() + ": " + e.getMessage());
                 updateStatus(currentJobResult.getId(), JobStatus.FAILED, serviceInstanceJob);
             }
             else {
-
                 System.err.println("Error starting job " + currentJob.getId() + ": " + e.getMessage());
+                for (JobResult jobResult : job.getJobResults()) {
+                    updateStatus(jobResult.getId(), JobStatus.FAILED, serviceInstanceJob);
+                }
             }
 
         }
@@ -211,7 +211,6 @@ public class DepMinerService {
             if (currentJobResult != null) monitorService.stopMonitoring(currentJobResult.getId());
         }
 
-        return null;
     }
 
     public record DatasetData(

@@ -63,7 +63,7 @@ public abstract class _Input implements Serializable {
 
     private void prepareData() {
 
-        if (this.skip >= 0) {
+        if (this.skip > 0) {
 
             this.df = this.df.offset(this.skip);
         }

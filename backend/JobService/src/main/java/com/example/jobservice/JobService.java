@@ -207,33 +207,41 @@ public class JobService {
 
         JobStatistics jobStats = new JobStatistics();
 
-        double cpuSum = 0;
-        long memorySum = 0;
+        try {
+            double cpuSum = 0;
+            long memorySum = 0;
 
-        Snapshot first = snapshots.getFirst();
-        jobStats.setCpuMin(first.getCpuLoad());
-        jobStats.setCpuMax(first.getCpuLoad());
-        jobStats.setMemoryMin(first.getUsedMemory());
-        jobStats.setMemoryMax(first.getUsedMemory());
+            Snapshot first = snapshots.getFirst();
+            jobStats.setCpuMin(first.getCpuLoad());
+            jobStats.setCpuMax(first.getCpuLoad());
+            jobStats.setMemoryMin(first.getUsedMemory());
+            jobStats.setMemoryMax(first.getUsedMemory());
 
-        for (Snapshot snapshot : snapshots) {
+            for (Snapshot snapshot : snapshots) {
 
-            double cpuLoad = snapshot.getCpuLoad();
-            long memory = snapshot.getUsedMemory();
+                double cpuLoad = snapshot.getCpuLoad();
+                long memory = snapshot.getUsedMemory();
 
-            cpuSum += cpuLoad;
-            memorySum += memory;
+                cpuSum += cpuLoad;
+                memorySum += memory;
 
-            if (cpuLoad > jobStats.getCpuMax()){ jobStats.setCpuMax(cpuLoad); }
-            if (cpuLoad < jobStats.getCpuMin()){ jobStats.setCpuMin(cpuLoad); }
+                if (cpuLoad > jobStats.getCpuMax()){ jobStats.setCpuMax(cpuLoad); }
+                if (cpuLoad < jobStats.getCpuMin()){ jobStats.setCpuMin(cpuLoad); }
 
-            if (memory > jobStats.getMemoryMax()){ jobStats.setMemoryMax(memory); }
-            if (memory < jobStats.getMemoryMin()){ jobStats.setMemoryMin(memory); }
+                if (memory > jobStats.getMemoryMax()){ jobStats.setMemoryMax(memory); }
+                if (memory < jobStats.getMemoryMin()){ jobStats.setMemoryMin(memory); }
+            }
+
+            int n = snapshots.size();
+            jobStats.setCpuAvg(cpuSum / n);
+            jobStats.setMemoryAvg((double) memorySum / n);
+        }
+        catch (NoSuchElementException e) {
+
+
         }
 
-        int n = snapshots.size();
-        jobStats.setCpuAvg(cpuSum / n);
-        jobStats.setMemoryAvg((double) memorySum / n);
+
 
         return jobStats;
     }
