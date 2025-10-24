@@ -18,6 +18,10 @@ import { Navigate } from "react-router-dom";
 import CheckIcon from '@mui/icons-material/Check';
 import CloseIcon from '@mui/icons-material/Close';
 
+const serverURL = import.meta.env.VITE_EUREKA_URL;
+const jobServiceURL = import.meta.env.VITE_JOBSERVICE_URL;
+const dataServiceURL = import.meta.env.VITE_DATASERVICE_URL;
+
 export default function JobsCreate({ datasetId }) {
 
     const [availableAlgorithms, setAvailableAlgorithms] = useState([]);
@@ -55,11 +59,11 @@ export default function JobsCreate({ datasetId }) {
         setLoading(true);
         async function fetchData() {
             try {
-                const fetchAlgorithms = await fetch("http://localhost:8761/algorithms");                
+                const fetchAlgorithms = await fetch(serverURL+"/algorithms");                
                 const algorithmsData = await fetchAlgorithms.json();
                 setAvailableAlgorithms(algorithmsData);
 
-                const fetchDatasets = await fetch("http://localhost:8081/datasets");
+                const fetchDatasets = await fetch(dataServiceURL+"/datasets");
                 const datasetsData = await fetchDatasets.json();
                 const datasets = datasetsData._embedded?.datasetList || [];
                 const datasetDict = {};
@@ -73,7 +77,7 @@ export default function JobsCreate({ datasetId }) {
 
                 setAvailableDatasets(datasetDict);    
                 
-                const fetchJobs = await fetch("http://localhost:8082/jobs");
+                const fetchJobs = await fetch(jobServiceURL+"/jobs");
                 const jobsData = await fetchJobs.json();
                 const jobs = jobsData._embedded?.jobList || [];
                 setJobNames(jobs.map((job) => job.jobName));
@@ -129,7 +133,7 @@ export default function JobsCreate({ datasetId }) {
         }
 
         try {
-            const response = await fetch("http://localhost:8082/jobs", {
+            const response = await fetch(jobServiceURL+"/jobs", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -263,6 +267,7 @@ export default function JobsCreate({ datasetId }) {
                 </Tooltip>
                 {/* MAX number of rows OR entries to process */}
                 <Tooltip title="Maximum number of entries to process from the dataset. If not set, all entries will be processed.">
+                    <Box display="flex" alignItems="center" gap={1} mb={2}>
                     <TextField
                         label="Limit Entries"
                         type="number"                    
@@ -272,9 +277,14 @@ export default function JobsCreate({ datasetId }) {
                         error = {!isNumberUnderNumEntries(limitEntries)}
                         helperText = {!isNumberUnderNumEntries(limitEntries) ? `Must be between 0 and ${availableDatasets[dataset].entries}` : ""}
                         />
+                    <Button variant="outlined" onClick={() => setLimitEntries("")}>
+                        Reset
+                    </Button>
+                    </Box>
                 </Tooltip>
                 {/* NUmber of rows OR entries to SKIP from beginig of the dataset */}
                 <Tooltip title="Number of entries to skip from the beginning of the dataset.">
+                    <Box display="flex" alignItems="center" gap={1} mb={2}>
                     <TextField
                         label="Skip Entries"
                         type="number"
@@ -284,9 +294,14 @@ export default function JobsCreate({ datasetId }) {
                         error = {!isNumberUnderNumEntries(skipEntries)}
                         helperText = {!isNumberUnderNumEntries(skipEntries) ? `Must be between 0 and ${availableDatasets[dataset].entries}` : ""}
                         />  
+                    <Button variant="outlined" onClick={() => setSkipEntries("")}>
+                        Reset
+                    </Button>
+                    </Box>
                 </Tooltip>
                 {/* MAX size of LHS */}
                 <Tooltip title="Maximum size of the left-hand side (LHS) of the functional dependencies to be discovered.">
+                    <Box display="flex" alignItems="center" gap={1} mb={2}>
                     <TextField
                         label="Max LHS"
                         type="number"
@@ -296,9 +311,14 @@ export default function JobsCreate({ datasetId }) {
                         error = {maxLhs < 0 }
                         helperText = {maxLhs < 0 ? "Must be non-negative" : ""}
                         />  
+                    <Button variant="outlined" onClick={() => setMaxLhs("")}>
+                        Reset
+                    </Button>
+                    </Box>
                 </Tooltip>
                 {/* Number of repetition computation of each selected algorithm */}
                 <Tooltip title="Number of times to repeat the FD finding process for each selected algorithm. Must be between 1 and 20.">
+                    <Box display="flex" alignItems="center" gap={1} mb={2}>
                     <TextField
                         label="Repeat"
                         type="number"
@@ -308,6 +328,10 @@ export default function JobsCreate({ datasetId }) {
                         error = {repeat < 1 || repeat > 20 }
                         helperText = {repeat < 1 || repeat > 20 ? `Must be between 0 and 20` : ""}
                         />
+                    <Button variant="outlined" onClick={() => setRepeat(1)}>
+                        Reset
+                    </Button>
+                    </Box>
                 </Tooltip>
                 <Stack spacing={5} direction="row">
                     <Button type="submit" variant="contained">Create Job</Button>

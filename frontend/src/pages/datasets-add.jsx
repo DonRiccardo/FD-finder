@@ -21,6 +21,7 @@ import { Navigate } from "react-router-dom";
 import { makeTextFileLineIterator } from "../utils/text-file-line-iterator.js";
 
 const allowedFileExts = ["csv", "json"];
+const dataServiceURL = import.meta.env.VITE_DATASERVICE_URL;
 
 
 export default function DatasetsAddPage(){
@@ -45,7 +46,7 @@ export default function DatasetsAddPage(){
         async function fetchData() {
             try {
                 setLoading(true);
-                const fetchDatasets = await fetch("http://localhost:8081/datasets");
+                const fetchDatasets = await fetch(dataServiceURL+"/datasets");
                 const datasetsData = await fetchDatasets.json();
                 const datasets = datasetsData._embedded?.datasetList || [];
                 
@@ -162,7 +163,7 @@ export default function DatasetsAddPage(){
             header: hasHeader
         };
         
-        let apiUrl = "http://127.0.0.1:8081/datasets";
+        let apiUrl = dataServiceURL+"/datasets";
 
         const formData = new FormData();
 

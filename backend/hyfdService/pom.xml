@@ -11,9 +11,21 @@
     <groupId>cz.cuni.mff.fdfinder</groupId>
     <artifactId>hyfdService</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <name>demoAlgService</name>
-    <description>demoAlgService</description>
+    <name>hyfdService</name>
+    <description>hyfdService</description>
     <url/>
+    <repositories>
+        <repository>
+            <id>michaelmior-Metanome</id>
+            <url>https://packagecloud.io/michaelmior/Metanome/maven2</url>
+            <releases>
+                <enabled>true</enabled>
+            </releases>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+        </repository>
+    </repositories>
     <licenses>
         <license/>
     </licenses>
@@ -63,10 +75,19 @@
             <scope>runtime</scope>
         </dependency>
         <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+            <version>33.2.1-jre</version>
+        </dependency>
+        <dependency>
             <groupId>org.apache.spark</groupId>
             <artifactId>spark-sql_2.13</artifactId>
             <version>4.0.1</version>
             <exclusions>
+                <exclusion>
+                    <groupId>org.apache.logging.log4j</groupId>
+                    <artifactId>log4j-slf4j2-impl</artifactId>
+                </exclusion>
                 <exclusion>
                     <groupId>org.glassfish.jersey.core</groupId>
                     <artifactId>jersey-client</artifactId>
@@ -89,12 +110,12 @@
         <dependency>
             <groupId>de.uni-potsdam.hpi</groupId>
             <artifactId>utils</artifactId>
-            <version>0.0.1-SNAPSHOT</version>
+            <version>0.0.1-calcite-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>de.uni-potsdam.hpi</groupId>
             <artifactId>dao</artifactId>
-            <version>0.0.1-SNAPSHOT</version>
+            <version>0.0.1-calcite-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>

@@ -16,6 +16,8 @@ import Badge from '@mui/material/Badge';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import { websocketListen, formatJobMetadaata } from "../utils/websocket-jobs";
 
+const jobServiceURL = import.meta.env.VITE_JOBSERVICE_URL;
+
 export default function JobssAll() {
 
     const [pageSize, setPageSize] = useState(20);
@@ -23,7 +25,7 @@ export default function JobssAll() {
 
     const fetchJobs = React.useCallback(async () => {
         
-        fetch("http://localhost:8082/jobs")
+        fetch(jobServiceURL+"/jobs")
         .then((response) => {
             if(!response.ok) Promise.reject(response);
             return response.json();
@@ -52,7 +54,7 @@ export default function JobssAll() {
 
     const runJob = (row) => async () => {
         if (row.canRun) {
-            fetch(`http://localhost:8082/jobs/${row.id}/start`, {  
+            fetch(`${jobServiceURL}/jobs/${row.id}/start`, {  
                 method: 'POST',
             })
             .then((response) => {
@@ -71,7 +73,7 @@ export default function JobssAll() {
 
     const cancelJob = (row) => async () => {
         if (row.canCancel) {
-            fetch(`http://localhost:8082/jobs/${row.id}/cancel`, {  
+            fetch(`${jobServiceURL}/jobs/${row.id}/cancel`, {  
                 method: 'DELETE', 
             })
             .then((response) => {
@@ -184,7 +186,7 @@ export default function JobssAll() {
     const handleDelete = (row) => {
         if (row.canDelete) {
             if (window.confirm(`Are you sure you want to delete job "${row.id}"? This action cannot be undone.`)) {
-                fetch(`http://localhost:8082/jobs/${row.id}/delete`, {
+                fetch(`${jobServiceURL}/jobs/${row.id}/delete`, {
                     method: 'DELETE',
                 })
                 .then((response) => {

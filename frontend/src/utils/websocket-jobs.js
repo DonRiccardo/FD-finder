@@ -1,9 +1,11 @@
 import SockJS  from "sockjs-client/dist/sockjs";
 import { Client } from "@stomp/stompjs";
 
+const jobServiceURL = import.meta.env.VITE_JOBSERVICE_URL;
+
 export function websocketListen(setRows) {
 
-    const socket = new SockJS("http://localhost:8082/websocket");
+    const socket = new SockJS(jobServiceURL+"/websocket");
     const stompClient = new Client({
         webSocketFactory: () => socket,
         reconnectDelay: 5000,

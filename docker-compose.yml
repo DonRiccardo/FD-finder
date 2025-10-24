@@ -1,0 +1,117 @@
+services:
+  eureka-server:
+    container_name: eureka-server
+    build:
+      context: ./backend/server
+      dockerfile: Dockerfile
+    ports:
+      - "8761:8761"
+    networks:
+      - spring-cloud-network
+  dataservice:
+    container_name: dataservice
+    build:
+      context: ./backend/dataservice
+      dockerfile: Dockerfile
+    ports:
+      - "8081:8081"
+    networks:
+      - spring-cloud-network
+    depends_on:
+      - eureka-server
+    volumes:
+      - ./backend/dataservice/data:/data
+    environment:
+      eureka.client.serviceUrl.defaultZone: http://eureka-server:8761/eureka/
+  jobservice:
+    container_name: jobservice
+    build:
+      context: ./backend/jobservice
+      dockerfile: Dockerfile
+    ports:
+      - "8082:8082"
+    networks:
+      - spring-cloud-network
+    depends_on:
+      - eureka-server
+    environment:
+      eureka.client.serviceUrl.defaultZone: http://eureka-server:8761/eureka/
+  fdepalg:
+    container_name: fdepalg
+    build:
+      context: ./backend/fdepService
+      dockerfile: Dockerfile
+    ports:
+      - "8083:8083"
+    networks:
+      - spring-cloud-network
+    depends_on:
+      - eureka-server
+    environment:
+      eureka.client.serviceUrl.defaultZone: http://eureka-server:8761/eureka/
+  depmineralg:
+    container_name: depmineralg
+    build:
+      context: ./backend/dep-minerService
+      dockerfile: Dockerfile
+    ports:
+      - "8084:8084"
+    networks:
+      - spring-cloud-network
+    depends_on:
+      - eureka-server
+    environment:
+      eureka.client.serviceUrl.defaultZone: http://eureka-server:8761/eureka/
+  fastfdsalg:
+    container_name: fastfdsalg
+    build:
+      context: ./backend/fastfdsService
+      dockerfile: Dockerfile
+    ports:
+      - "8085:8085"
+    networks:
+      - spring-cloud-network
+    depends_on:
+      - eureka-server
+    environment:
+      eureka.client.serviceUrl.defaultZone: http://eureka-server:8761/eureka/
+  hyfdalg:
+    container_name: hyfdalg
+    build:
+      context: ./backend/hyfdService
+      dockerfile: Dockerfile
+    ports:
+      - "8086:8086"
+    networks:
+      - spring-cloud-network
+    environment:
+      eureka.client.serviceUrl.defaultZone: http://eureka-server:8761/eureka/
+  tanealg:
+    container_name: tanealg
+    build:
+      context: ./backend/taneService
+      dockerfile: Dockerfile
+    ports:
+      - "8087:8087"
+    networks:
+      - spring-cloud-network
+    depends_on:
+      - eureka-server
+    environment:
+      eureka.client.serviceUrl.defaultZone: http://eureka-server:8761/eureka/
+  frontend:
+    container_name: frontend
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "5173:80"
+    networks:
+      - spring-cloud-network
+    env_file:
+    - ./frontend/.env
+
+
+networks:
+  spring-cloud-network:
+    driver: bridge

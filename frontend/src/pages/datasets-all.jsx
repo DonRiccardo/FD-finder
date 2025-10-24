@@ -17,6 +17,7 @@ import FilterListIcon from '@mui/icons-material/FilterList';
 import Tooltip from '@mui/material/Tooltip';
 import Badge from '@mui/material/Badge';
 
+const dataServiceURL = import.meta.env.VITE_DATASERVICE_URL;
 
 export default function DatasetsAll() {
 
@@ -25,7 +26,7 @@ export default function DatasetsAll() {
 
     const fetchDatasets = React.useCallback(async () => {
         try {
-            fetch("http://localhost:8081/datasets")
+            fetch(dataServiceURL+"/datasets")
             .then((response) => {
                 if(!response.ok) Promise.reject(response);
 
@@ -123,7 +124,7 @@ export default function DatasetsAll() {
     const handleDelete = (row) => {
         if (row.canDelete) {
             if (window.confirm(`Are you sure you want to delete dataset "${row.name}"? This action cannot be undone.`)) {
-                fetch(`http://localhost:8081/datasets/${row.id}/delete`, {
+                fetch(`${dataServiceURL}/datasets/${row.id}/delete`, {
                     method: 'DELETE',
                 })
                 .then((response) => {

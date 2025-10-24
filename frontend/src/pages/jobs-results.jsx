@@ -20,6 +20,10 @@ import {
 import { Line } from 'react-chartjs-2';
 import { websocketListen } from "../utils/websocket-jobs";
 
+const serverURL = import.meta.env.VITE_EUREKA_URL;
+const jobServiceURL = import.meta.env.VITE_JOBSERVICE_URL;
+const dataServiceURL = import.meta.env.VITE_DATASERVICE_URL;
+
 ChartJS.register(
   CategoryScale,
   LinearScale,
@@ -95,7 +99,7 @@ export default function JobsResults({ jobId }) {
     }
     const job = availableJobs[selectedJob];
 
-    fetch("http://localhost:8081/datasets/" + job.dataset)
+    fetch(dataServiceURL+"/datasets/" + job.dataset)
     .then(res => {
         if (!res.ok) throw new Error("Failed to fetch dataset metadata");
         return res.json();
@@ -105,12 +109,12 @@ export default function JobsResults({ jobId }) {
 
         if (job.status === "DONE") {
             return Promise.all([
-                fetch("http://localhost:8082/jobs/" + job.id + "/results")
+                fetch(jobServiceURL+"/jobs/" + job.id + "/results")
                 .then(r => { 
                     if (!r.ok) throw new Error("Failed to fetch job stats"); 
                     return r.json();
                 }),
-                fetch("http://localhost:8082/jobs/" + job.id + "/results/graphdata")
+                fetch(jobServiceURL+"/jobs/" + job.id + "/results/graphdata")
                 .then(r => { 
                     if (!r.ok) throw new Error("Failed to fetch graph data"); 
                     return r.json(); 
@@ -149,7 +153,7 @@ export default function JobsResults({ jobId }) {
 
         async function fetchJobs() {
             
-            fetch("http://localhost:8082/jobs")
+            fetch(jobServiceURL+"/jobs")
             .then(response => {
                 if (!response.ok) throw new Error("Failed to fetch jobs");
                 return response.json();
@@ -201,7 +205,7 @@ export default function JobsResults({ jobId }) {
 
     const handleShowFDs = async (jobResultId) => {
         
-        fetch("http://localhost:8082/jobs/results/" + jobResultId + "/fds")
+        fetch(jobServiceURL+"/jobs/results/" + jobResultId + "/fds")
         .then(res => { 
             if (!res.ok) throw new Error("Failed to fetch FDs"); return res.text(); 
         })
@@ -252,7 +256,7 @@ export default function JobsResults({ jobId }) {
             return;
         }
         
-        fetch("http://localhost:8082/jobs/results/" + iterationId + "/fds")
+        fetch(jobServiceURL+"/jobs/results/" + iterationId + "/fds")
         .then(response => {
             if (!response.ok) throw new Error("Failed to download found FDs");
             return response.blob().then(blob => ({ response, blob }));
@@ -327,7 +331,7 @@ export default function JobsResults({ jobId }) {
                 <div> <CircularProgress /> Loading data... </div> 
                 : 
                 <>
-                    {selectedJob && dataset ? 
+                    {selectedJob ? 
                         <>
                         <Stack spacing={5} direction="row" justifyContent="space-between" width={"100%"}>
                             <h3 style={{marginLeft: 5}}>{selectedJob}</h3> 
@@ -385,7 +389,7 @@ export default function JobsResults({ jobId }) {
                             <Divider variant="middle" component="li" />
                             <ListItem>
                                 <ListItemText primary="Dataset:" 
-                                secondary={`${availableJobs[selectedJob].datasetName} (Attributes: ${dataset.numAttributes}, Entries: ${dataset.numEntries})`}
+                                secondary={dataset ? (`${availableJobs[selectedJob].datasetName} (Attributes: ${dataset.numAttributes}, Entries: ${dataset.numEntries})`) : ("Dataset not found!")}
                                 slotProps={{
                                     secondary: { sx: {  textAlign: "right" } },
                                 }}

@@ -124,8 +124,8 @@ public class JobDto {
     }
 
     public  List<JobResult> getJobResults() {
-
-        return jobResults.stream().filter(res -> Objects.equals(res.getAlgorithm(), "fdep")).toList();
+        // TODO change name of the algorithm
+        return jobResults.stream().filter(res -> Objects.equals(res.getAlgorithm(), "demo")).toList();
     }
 
     public void setJobResults(List<JobResult> jobResults) {

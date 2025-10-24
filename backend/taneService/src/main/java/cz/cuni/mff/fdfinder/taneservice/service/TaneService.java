@@ -240,7 +240,7 @@ public class TaneService {
         System.out.println("TANE - JOB retrieved = file ");
 
         // store DATASET locally
-        Path targetPathDataset = Paths.get("tmp/datasets/job-" + job.getId() + "." + dataset.getFileFormat().toString().toLowerCase());
+        Path targetPathDataset = Paths.get("datatmp/datasets/job-" + job.getId() + "." + dataset.getFileFormat().toString().toLowerCase());
         Files.createDirectories(targetPathDataset.getParent());
 
 
@@ -405,7 +405,7 @@ public class TaneService {
 
     private Path getFdsResultFilePath(JobResult jobResult, long jobId) {
         // fileName: job-ID-fdep-run-#-foundFDs.txt
-        return Paths.get("tmp/results/job-" + jobId
+        return Paths.get("datatmp/results/job-" + jobId
                 + "-TANE-run-" + jobResult.getIteration() + "-foundFDs.txt");
     }
 
