@@ -34,6 +34,8 @@ services:
       - spring-cloud-network
     depends_on:
       - eureka-server
+    volumes:
+      - ./backend/jobservice/data:/data
     environment:
       eureka.client.serviceUrl.defaultZone: http://eureka-server:8761/eureka/
   fdepalg:
