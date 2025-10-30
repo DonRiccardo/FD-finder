@@ -1,18 +1,9 @@
 import React, { useEffect, useState } from "react";
 import {
-  Stack,
-  Input,
-  TextField,
-  Button,
-  Checkbox,
-  Select,
-  MenuItem,
-  Box,
-  ListItemText,
-  IconButton,
-  Tooltip,
-  InputAdornment,
-  FormControl, FormControlLabel, FormLabel, InputLabel
+  Stack, TextField, Button,
+  Checkbox, Select, MenuItem,
+  Box, ListItemText, Tooltip,
+  InputAdornment, FormControl, InputLabel
 } from "@mui/material";
 import { Navigate } from "react-router-dom";
 import CheckIcon from '@mui/icons-material/Check';
@@ -22,6 +13,12 @@ const serverURL = import.meta.env.VITE_EUREKA_URL;
 const jobServiceURL = import.meta.env.VITE_JOBSERVICE_URL;
 const dataServiceURL = import.meta.env.VITE_DATASERVICE_URL;
 
+/**
+ * Render form form creating new Job.
+ * @param {Object} props - input parameters
+ * @param {Number} props.datasetId - ID of dataset selected to create job for
+ * @returns {JSX.Element} form
+ */
 export default function JobsCreate({ datasetId }) {
 
     const [availableAlgorithms, setAvailableAlgorithms] = useState([]);
@@ -101,15 +98,25 @@ export default function JobsCreate({ datasetId }) {
         }
     }, [datasetId, availableDatasets]);
 
+    /**
+     * Add selected algorithm to state.
+     * @param {*} event 
+     */
     const handleAlgorithmChange = (event) => {
         const {
-        target: { value },
+            target: { value },
         } = event;
         setAlgorithm(
             typeof value === 'string' ? value.split(',') : value,
         );
     };
 
+    /**
+     * Upload new job to backend.
+     * Add LIMIT and SKIP if specified and >0.
+     * Add MAXLHS if specified and >=0.
+     * @param {*} event 
+     */
     const handleSubmit = async (event) => {
         event.preventDefault();
 
@@ -132,30 +139,29 @@ export default function JobsCreate({ datasetId }) {
             jobData.maxLHS = maxLhs;
         }
 
-        try {
-            const response = await fetch(jobServiceURL+"/jobs", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify(jobData),
-            });
-
-            if (response.ok) {
-                setSubmitted(true);
-            }
-            else {
-                console.error("Failed to create job");
-                alert("Failed to create job. Please check the input data and try again.");
-            }
-        }
-        catch (error) {
+        fetch(jobServiceURL + "/jobs", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify(jobData),
+        })
+        .then(response => {
+            if (!response.ok) throw new Error("Failed to create job");
+            return response.json();
+        })
+        .then(() => {
+            setSubmitted(true);
+        })
+        .catch(error => {
             console.error("Error creating job:", error);
-            alert("Error creating job. Please try again later.");
-        }
-
+            alert("Error creating job. Please check the input data and try again.");
+        });
     }
 
+    /**
+     * Reset all form values.
+     */
     const resetForm = () => {
         setAlgorithm([]);
         setDataset("");

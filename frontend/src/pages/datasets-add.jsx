@@ -1,18 +1,10 @@
 import * as React from "react";
 import {
-  Stack,
-  Input,
-  TextField,
-  Button,
-  Checkbox,
-  Select,
-  MenuItem,
-  Box,
-  IconButton,
-  Tooltip,
-  InputAdornment,
-  FormControl, FormControlLabel, FormLabel,
-  InputLabel,
+  Stack, Input, TextField,
+  Button, Checkbox, Select,
+  MenuItem, Box, Tooltip,
+  InputAdornment, FormControl, FormControlLabel, 
+  FormLabel, InputLabel,
 } from "@mui/material";
 
 import CheckIcon from '@mui/icons-material/Check';
@@ -23,7 +15,10 @@ import { makeTextFileLineIterator } from "../utils/text-file-line-iterator.js";
 const allowedFileExts = ["csv", "json"];
 const dataServiceURL = import.meta.env.VITE_DATASERVICE_URL;
 
-
+/**
+ * Creates form to upload new dataset
+ * @returns {JSX.Element} form
+ */
 export default function DatasetsAddPage(){
 
     const [userFileUpload, setUserFileUpload] = React.useState("");
@@ -42,25 +37,24 @@ export default function DatasetsAddPage(){
     const [isNameUnique, setIsNameUnique] = React.useState(true);
 
     React.useEffect(() => {
+        setLoading(true);
 
-        async function fetchData() {
-            try {
-                setLoading(true);
-                const fetchDatasets = await fetch(dataServiceURL+"/datasets");
-                const datasetsData = await fetchDatasets.json();
-                const datasets = datasetsData._embedded?.datasetList || [];
-                
-                setDatasetNames(datasets.map((dataset) => (dataset.name)));   
-            } 
-            catch (error) {
+        fetch(dataServiceURL+"/datasets")
+        .then(res => {
+            if (!res.ok) throw new Error(`Failed to fetch datasets: ${res.status}`);
+            return res.json();
+        })
+        .then(datasetsData => {
+            const datasets = datasetsData._embedded?.datasetList || [];
+            setDatasetNames(datasets.map(ds => ds.name));
+        })
+        .catch(error => {
+            console.error("Error fetching datasets:", error);
+        })
+        .finally(() => {
+            setLoading(false);
+        });
 
-            }
-            finally {
-                setLoading(false);
-            }
-        }
-
-        fetchData();
     }, []);
 
     React.useEffect(() => {
@@ -69,7 +63,9 @@ export default function DatasetsAddPage(){
 
     }, [fileName, datasetNames]);
 
-
+    /**
+     * Reset all form values.
+     */
     const resetForm = () => {
         setUserFileUpload("");
         setFileName("");
@@ -81,6 +77,11 @@ export default function DatasetsAddPage(){
         setRawRows([]);
     }
 
+    /**
+     * Changed file initialize reset of form, preview and settings.
+     * @param {*} event changed file
+     * @returns 
+     */
     const handleFileInputChange = (event) => {  
                 
         resetForm();
@@ -112,6 +113,10 @@ export default function DatasetsAddPage(){
         setFileFormat(ext);        
     }
 
+    /**
+     * Read first 10 rows of CSV file.
+     * @param {*} file 
+     */
     const readCsvFile = async (file) => {
         setPreview([]);
         setDelim(",");
@@ -135,6 +140,10 @@ export default function DatasetsAddPage(){
 
     }
 
+    /**
+     * Read first 10 objects from JSON file.
+     * @param {*} file 
+     */
     const readJsonFile = (file) => {
 
         fetch(URL.createObjectURL(file))
@@ -152,6 +161,10 @@ export default function DatasetsAddPage(){
         });
     }
 
+    /**
+     * Upload dataset to backend from form.
+     * @param {*} event 
+     */
     const handleSubmit = (event) => {
         event.preventDefault();
 
@@ -365,7 +378,14 @@ export default function DatasetsAddPage(){
 
 }
 
-
+/**
+ * Creates dataset preview as table.
+ * @component
+ * @param {Object} props - input parameters
+ * @param {Array<Array<string>>} props.preview - entries to show in preview
+ * @param {boolean} props.hasHeader - is first entry header
+ * @returns {JSX.Element} dataset preview table
+ */
 function DatasetPreview({preview, hasHeader}){
 
     return(
@@ -376,49 +396,42 @@ function DatasetPreview({preview, hasHeader}){
                   
                 <Box sx={{ overflowX: "auto" , width: "100%", }}>
                 <table style={{ borderCollapse: "collapse", width: "100%" }}>
-                    
-                    <>
-                        <tbody>
-                            {preview.map((row, i) => (
-                                <tr key={i}>
-                                {Object.values(row).map((cell, j) => (
-                                    i===0 && hasHeader ? 
-                                        (<td
-                                        key={j}
-                                        
-                                        style={{
-                                            border: "1px solid black",
-                                            padding: "4px 8px",
-                                            fontSize: "13px",
-                                            background: "orange"
-                                        }}
-                                        
-                                        
-                                        >
-                                        {cell}
-                                        </td>
-                                    )
-                                    :(    
-                                    <td
+                    <tbody>
+                        {preview.map((row, i) => (
+                            <tr key={i}>
+                            {Object.values(row).map((cell, j) => (
+                                i===0 && hasHeader ? 
+                                    (<td
                                     key={j}
                                     
                                     style={{
                                         border: "1px solid black",
                                         padding: "4px 8px",
                                         fontSize: "13px",
-                                    }}
-                                    
+                                        background: "orange"
+                                    }}                                        
                                     
                                     >
                                     {cell}
                                     </td>
-                                    )
-                                ))}
-                                </tr>
+                                )
+                                :(    
+                                <td
+                                key={j}                                    
+                                style={{
+                                    border: "1px solid black",
+                                    padding: "4px 8px",
+                                    fontSize: "13px",
+                                }}                                    
+                                
+                                >
+                                {cell}
+                                </td>
+                                )
                             ))}
-                        </tbody>
-                    </>
-                        
+                            </tr>
+                        ))}
+                    </tbody>                       
                 </table>
                 </Box>
                 ) : (

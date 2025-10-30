@@ -1,0 +1,144 @@
+openapi: 3.1.0
+info:
+  title: OpenAPI definition
+  version: v0
+servers:
+  - url: 'http://localhost:8084'
+    description: Generated server url
+paths:
+  '/depminer/start/{id}':
+    post:
+      tags:
+        - dep-miner-controller
+      operationId: start
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/JobDto'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: object
+  '/depminer/cancel/{id}':
+    post:
+      tags:
+        - dep-miner-controller
+      operationId: cancel
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: object
+components:
+  schemas:
+    JobDto:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        status:
+          type: string
+        algorithm:
+          type: array
+          items:
+            type: string
+        repeat:
+          type: integer
+          format: int32
+        dataset:
+          type: integer
+          format: int64
+        datasetName:
+          type: string
+        limitEntries:
+          type: integer
+          format: int32
+        skipEntries:
+          type: integer
+          format: int32
+        maxLHS:
+          type: integer
+          format: int32
+        jobResults:
+          type: array
+          items:
+            $ref: '#/components/schemas/JobResult'
+    JobResult:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        status:
+          type: string
+          enum:
+            - CREATED
+            - WAITING
+            - RUNNING
+            - CANCELLED
+            - FAILED
+            - DONE
+        iteration:
+          type: integer
+          format: int32
+        algorithm:
+          type: string
+        startTime:
+          type: integer
+          format: int64
+        endTime:
+          type: integer
+          format: int64
+        duration:
+          type: integer
+          format: int64
+        numFoundFd:
+          type: integer
+          format: int32
+        snapshots:
+          type: array
+          items:
+            $ref: '#/components/schemas/Snapshot'
+    Snapshot:
+      type: object
+      properties:
+        timestamp:
+          type: integer
+          format: int64
+        usedMemory:
+          type: integer
+          format: int64
+        cpuLoad:
+          type: number
+          format: double
+        threadCount:
+          type: integer
+          format: int32
+        usedMemoryMb:
+          type: number
+          format: double
+        cpuPercent:
+          type: number
+          format: double

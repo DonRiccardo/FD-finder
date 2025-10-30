@@ -31,7 +31,7 @@ public class _StrippedPartitionGenerator {
 	public _StrippedPartitionGenerator() {
 	}
 
-	public JavaPairRDD<BitSet, _StrippedPartition> execute(_Input input) throws Exception {
+	public JavaPairRDD<BitSet, _StrippedPartition> execute(_Input input) {
 
 		// nacitani dat, vytvoreni stripped partitions
                 this.returnValue = input.getRddData()
@@ -44,11 +44,7 @@ public class _StrippedPartitionGenerator {
                                 String value = row.getString(i);
                                 //BitSet b = new BitSet();
                                 //b.set(i);
-                                
-                                // ignorovanie NULL hodnot, vysledkom je, ze kazda bude ako jedinecna hodnota
-                                if (value == null){
-                                    continue;
-                                }
+
                                 
                                 LongArrayList l = new LongArrayList();  
                                 l.add(tuple._2);

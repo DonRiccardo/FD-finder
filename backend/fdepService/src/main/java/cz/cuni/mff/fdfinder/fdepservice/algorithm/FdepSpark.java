@@ -14,10 +14,11 @@ import org.apache.spark.sql.SparkSession;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.HashSet;
 import java.util.List;
 
 /**
- *
+ * Class initializing algorithm execution.
  * @author Richard
  */
 public class FdepSpark {
@@ -57,7 +58,11 @@ public class FdepSpark {
         loadInput();
     }
 
-    private void loadInput() throws IOException {
+    /**
+     * Reads dataset into {@link _Input} and prepare it for execution.
+     * @throws UnsupportedOperationException if the dataset format is not supported
+     */
+    private void loadInput() throws UnsupportedOperationException {
         System.out.println("SPARK starting to create INPUT");
 
         if (fileFormat == FileFormat.CSV) {
@@ -74,8 +79,12 @@ public class FdepSpark {
             throw new UnsupportedOperationException("Not supported yet.");
         }
     }
-    
-    public List<_FunctionalDependency> startAlgorithm() throws IOException {
+
+    /**
+     * Sets and starts algorithm execution.
+     * @return {@link HashSet} of ({@link _FunctionalDependency}) founded in the dataset
+     */
+    public List<_FunctionalDependency> startAlgorithm() {
 
             long startTime = System.currentTimeMillis();
 			System.out.println("START Spark: " + startTime);

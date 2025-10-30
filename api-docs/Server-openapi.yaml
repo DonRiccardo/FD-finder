@@ -1,0 +1,23 @@
+openapi: 3.1.0
+info:
+  title: OpenAPI definition
+  version: v0
+servers:
+  - url: 'http://localhost:8761'
+    description: Generated server url
+paths:
+  /algorithms:
+    get:
+      tags:
+        - server-controller
+      operationId: algorithms
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  type: string
+components: {}

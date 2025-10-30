@@ -1,7 +1,3 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package cz.cuni.mff.fdfinder.depminerservice.algorithm;
 
 import cz.cuni.mff.fdfinder.depminerservice.algorithm.model._CSVInput;
@@ -15,13 +11,14 @@ import org.apache.spark.sql.SparkSession;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.HashSet;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- *
- * @author pavel.koupil
+ * Class initializing algorithm execution.
+ * @author Richard
  */
 public class DepMinerSpark {
 
@@ -61,7 +58,11 @@ public class DepMinerSpark {
 		loadInput();
 	}
 
-	private void loadInput() throws IOException {
+	/**
+	 * Reads dataset into {@link _Input} and prepare it for execution.
+	 * @throws UnsupportedOperationException if the dataset format is not supported
+	 */
+	private void loadInput() throws UnsupportedOperationException {
 
 		System.out.println("SPARK starting to create INPUT");
 
@@ -80,6 +81,11 @@ public class DepMinerSpark {
 		}
 	}
 
+	/**
+	 * Sets and starts algorithm execution.
+	 * @return {@link HashSet} of ({@link _FunctionalDependency}) founded in the dataset
+	 * @throws Exception from {@link cz.cuni.mff.fdfinder.depminerservice.algorithm.service._FunctionalDependencyGenerator}
+	 */
 	public List<_FunctionalDependency> startAlgorithm() throws Exception {
 
 		long startTime = System.currentTimeMillis();

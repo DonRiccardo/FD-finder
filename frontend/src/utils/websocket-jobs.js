@@ -3,6 +3,11 @@ import { Client } from "@stomp/stompjs";
 
 const jobServiceURL = import.meta.env.VITE_JOBSERVICE_URL;
 
+/**
+ * Listen to webSocket and update Job data.
+ * @param {*} setRows 
+ * @returns 
+ */
 export function websocketListen(setRows) {
 
     const socket = new SockJS(jobServiceURL+"/websocket");
@@ -52,6 +57,11 @@ export function websocketListen(setRows) {
     };
 }
 
+/**
+ * Formate Job data and create new fields.
+ * @param {Object} job to be formatted
+ * @returns {Object} formatted job
+ */
 export function formatJobMetadaata(job) {
     
     return {

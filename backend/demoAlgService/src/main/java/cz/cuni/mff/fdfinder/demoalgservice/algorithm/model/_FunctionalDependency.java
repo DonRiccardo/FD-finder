@@ -10,11 +10,14 @@ import java.io.Serializable;
 import java.util.*;
 
 /**
- *
- * @author pavel.koupil
+ * Class for storing FD (A->B)
+ * A=LHS
+ * B=RHS
  */
 public class _FunctionalDependency {
-
+    /**
+     * Identifier of a column in the dataset.
+     */
     public static class _ColumnIdentifier implements Comparable<_ColumnIdentifier>, Serializable {
 
         private static final long serialVersionUID = -3199299021265706919L;
@@ -31,6 +34,7 @@ public class _FunctionalDependency {
         }
 
         /**
+         *
          * @param tableIdentifier table's identifier
          * @param columnIdentifier column's identifier
          */
@@ -164,6 +168,9 @@ public class _FunctionalDependency {
         }
     }
 
+    /**
+     * Combination of {@link _ColumnIdentifier}.
+     */
     public static class _ColumnCombination implements Serializable, Comparable<Object> {
 
         public static final String COLUMN_CONNECTOR = ",";
@@ -332,6 +339,11 @@ public class _FunctionalDependency {
         this.determinant = new _ColumnCombination();
     }
 
+    /**
+     * A->B
+     * @param determinant A
+     * @param dependant B
+     */
     public _FunctionalDependency(_ColumnCombination determinant,
             _ColumnIdentifier dependant) {
         this.determinant = determinant;
@@ -339,32 +351,39 @@ public class _FunctionalDependency {
     }
 
     /**
-     * @return determinant
+     * @return determinant {@link _ColumnCombination} of attributes on LHS
      */
     public _ColumnCombination getDeterminant() {
         return determinant;
     }
 
+    /**
+     *
+     * @param dependant {@link _ColumnIdentifier} of attribute on RHS
+     */
     public void setDependant(_ColumnIdentifier dependant) {
         this.dependant = dependant;
     }
 
     /**
-     * @return dependant
+     * @return dependant {@link _ColumnIdentifier} attribute on RHS
      */
     public _ColumnIdentifier getDependant() {
         return dependant;
     }
 
+    /**
+     *
+     * @param determinant {@link _ColumnCombination} of attributes on LHS
+     */
     public void setDeterminant(_ColumnCombination determinant) {
         this.determinant = determinant;
     }
 
-//	@XmlTransient
-//	public void sendResultTo(OmniscientResultReceiver resultReceiver)
-//			throws CouldNotReceiveResultException, ColumnNameMismatchException {
-//		resultReceiver.receiveResult(this);
-//	}
+    /**
+     *
+     * @return Human readable {@link String} representation of FD
+     */
     @Override
     public String toString() {
         return determinant.toString() + FD_SEPARATOR + dependant.toString();

@@ -49,10 +49,6 @@ public class _StrippedPartitionGenerator implements Serializable{
                     //BitSet b = new BitSet();
                     //b.set(i);
                                  
-                    // ignorovanie NULL hodnot, vysledkom je, ze kazda bude ako jedinecna hodnota
-                    if (value == null){
-                        continue;
-                    }
 
                     LongArrayList l = new LongArrayList();  
                     l.add(tuple._2);

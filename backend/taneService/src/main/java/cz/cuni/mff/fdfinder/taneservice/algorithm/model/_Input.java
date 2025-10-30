@@ -9,20 +9,22 @@ import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SparkSession;
 import scala.Tuple2;
 
-import java.io.IOException;
 import java.io.Serializable;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 
+/**
+ * {@link _Input} is a class for storing data about dataset, read and process dataset.
+ * Also stores List of found FDs in the dataset.
+ */
 public abstract class _Input implements Serializable {
 
     protected String filePath;
 
     protected Dataset<Row> df;
-    protected JavaRDD rddData;
+    protected JavaRDD rdd;
 
     protected boolean hasHeader;
     protected String fileName;
@@ -39,7 +41,7 @@ public abstract class _Input implements Serializable {
 
 
     public _Input(String filePath, String tableName, boolean hasHeader, String delim, int skip,
-                  int limit, SparkSession spark) throws IOException {
+                  int limit, SparkSession spark) {
 
         this.filePath = filePath;
         Path p = Paths.get(this.filePath);
@@ -57,12 +59,14 @@ public abstract class _Input implements Serializable {
         this.getNames();
         this.foundFds = new HashSet<>();
 
-        this.rddData = df.rdd().zipWithIndex().toJavaRDD();
-
+        this.rdd = df.rdd().zipWithIndex().toJavaRDD();
     }
 
-    abstract protected void readDataSpark(SparkSession  spark) throws IOException;
+    abstract protected void readDataSpark(SparkSession  spark) ;
 
+    /**
+     * Skip {@code skip} lines and keep {@code limit} number of lines.
+     */
     private void prepareData() {
 
         if (this.skip > 0) {
@@ -75,7 +79,10 @@ public abstract class _Input implements Serializable {
         }
     }
 
-    private void getNames() throws IOException {
+    /**
+     * Gets and store columns names of the dataset.
+     */
+    private void getNames() {
 
         ImmutableList.Builder<String> builder = new ImmutableList.Builder<>();
 
@@ -96,12 +103,19 @@ public abstract class _Input implements Serializable {
 
     }
 
+    /**
+     * Calculate the number of columns in the dataset and number of attributes.
+     */
     private void calcNumbers() {
 
         this.numberOfColumns = this.df.columns().length;
         this.numberOfRows = df.count();
     }
 
+    /**
+     * Get data separated by rows and delimiter into {@link String} arrays.
+     * @return {@link List} of {@link String} arrays
+     */
     public List<String[]> getData(){
         return this.df
                 .map((MapFunction<Row, String[]>) row -> {
@@ -117,45 +131,85 @@ public abstract class _Input implements Serializable {
 
     }
 
+    /**
+     *
+     * @return read data as {@link JavaRDD}
+     */
     public JavaRDD<Tuple2<Row, Long>> getRddData(){
 
-        return this.rddData;
+        return this.rdd;
     }
 
+    /**
+     *
+     * @return {@link ImmutableList} of {@link String} column names of the dataset
+     */
     public ImmutableList<String> columnNames() {
 
         return this.names;
     }
 
+    /**
+     *
+     * @return {@link Integer} number of columns in the dataset
+     */
     public int numberOfColumns() {
 
         return this.numberOfColumns;
     }
 
+    /**
+     *
+     * @return {@link Long} number of rows in the dataset
+     */
     public long numberOfRows(){
 
         return this.numberOfRows;
     }
 
+    /**
+     * Get name of the dataset, which is usually name of the file.
+     * @return {@link String} name of the dataset
+     */
     public String relationName() {
 
         return this.tableName;
     }
 
+    /**
+     * Generate new copy of the {@link _Input}
+     * @return new copy
+     * @throws Exception
+     */
     public _Input generateNewCopy() throws Exception {
 
         return this;
     }
 
+    /**
+     * Store found FD in the HashSet.
+     * @param fd found {@link _FunctionalDependency}
+     */
     public void receiveResult(_FunctionalDependency fd) {
 
         foundFds.add(fd);
-        // System.out.println(fd.getDeterminant() + "->" + fd.getDependant());
     }
 
+    /**
+     *
+     * @return HashSet of found {@link _FunctionalDependency}
+     */
     public HashSet<_FunctionalDependency> getFoundFds(){
 
         return foundFds;
     }
 
+    /**
+     * Returns dataset in the {@link List} form of {@link Tuple2}(Row, index).
+     * @return dataset data as {@link List}
+     */
+    public List<Tuple2<Row, Long>> getDataAsListAndIndex() {
+
+        return this.rdd.collect();
+    }
 }

@@ -16,17 +16,12 @@ import java.util.List;
 
 public class FdepSparkAlgorithm implements Serializable{
 
-    //public static final String INPUT_SQL_CONNECTION = "DatabaseConnection";
-    //public static final String INPUT_TABLE_NAME = "Table_Name";
-    //public static final String INPUT_TAG = "Relational Input";
     private static final int GROUP_CAPACITY = 2000;
     
     private final _Input input;
     private int maxLhs;
     private static JavaSparkContext context;
 
-    //private DatabaseConnectionGenerator databaseConnectionGenerator;
-    //private RelationalInputGenerator relationalInputGenerator;
     private String tableName;
     private List<String> columnNames;
     private ObjectArrayList<_ColumnIdentifier> columnIdentifiers;
@@ -37,10 +32,7 @@ public class FdepSparkAlgorithm implements Serializable{
     private static _FDTree posCoverTree;
     private ObjectArrayList<List<String>> tuples;
     private ObjectArrayList<ObjectArrayList<String[]>> groups;
-    
 
-    //private FunctionalDependencyResultReceiver fdResultReceiver;
-    
     public FdepSparkAlgorithm (_Input input, int maxLhs, JavaSparkContext context){
         this.input = input;
         setMaxLhs(maxLhs);
@@ -62,38 +54,6 @@ public class FdepSparkAlgorithm implements Serializable{
 
     }
 
-/*
-    public ArrayList<ConfigurationRequirement<?>> getConfigurationRequirements() {
-        ArrayList<ConfigurationRequirement<?>> requiredConfig = new ArrayList<>();
-//		requiredConfig.add(new ConfigurationSpecificationSQLIterator(
-//			INPUT_SQL_CONNECTION));
-//		requiredConfig.add(new ConfigurationSpecificationString(INPUT_TABLE_NAME));
-        requiredConfig.add(new ConfigurationRequirementRelationalInput(INPUT_TAG));
-
-        return requiredConfig;
-    }
-*/
-   /*
-    public void setStringConfigurationValue(String identifier, String... values) {
-        if (identifier.equals(INPUT_TABLE_NAME)) {
-            this.tableName = values[0];
-        }
-    }
-*/
-/*
-    public void setRelationalInputConfigurationValue(String identifier, RelationalInputGenerator... values) {
-        if (identifier.equals(INPUT_TAG)) {
-            this.relationalInputGenerator = values[0];
-        }
-    }
-*/
-/*
-    public void setResultReceiver(
-            FunctionalDependencyResultReceiver resultReceiver) {
-        fdResultReceiver = resultReceiver;
-    }
-
-    */
     public void execute() {
 
         System.out.println("START Spark EXECUTE ");
@@ -157,13 +117,7 @@ public class FdepSparkAlgorithm implements Serializable{
      */
     private void negativeCover() {
         negCoverTree = new _FDTree(this.numberAttributes);
-        /*
-        for (int i = 0; i < tuples.size(); i++) {
-            for (int j = i + 1; j < tuples.size(); j++) {
-                violatedFds(tuples.get(i), tuples.get(j));
-            }
-        }
-        */
+
         LinkedList<Tuple2<ObjectArrayList<String[]>, ObjectArrayList<String[]>>> pair = new LinkedList<>();
         
         for (int i = 0; i < this.groups.size() - 1; i++) {
@@ -275,26 +229,17 @@ public class FdepSparkAlgorithm implements Serializable{
         List<String[]> data = this.input.getData();
         
         int numOfGroups = data.size() / FdepSparkAlgorithm.GROUP_CAPACITY;
-        //System.out.println("NUM_GROUPS: "+numOfGroups);
+
         for (int i = 0; i < numOfGroups; i++) {
             ObjectArrayList<String[]> group = new ObjectArrayList<>();
             group.addAll(data.subList(i*FdepSparkAlgorithm.GROUP_CAPACITY,(i+1)*FdepSparkAlgorithm.GROUP_CAPACITY));
-            /*
-            for (int j = 0; j < group.size(); j++) {
-                System.out.println("group member: "+Arrays.toString(group.get(j)));
-            }
-            */
+
             this.groups.add(group);
         }
         
         ObjectArrayList<String[]> group = new ObjectArrayList<>();
         group.addAll(data.subList(numOfGroups*FdepSparkAlgorithm.GROUP_CAPACITY,data.size()));
         this.groups.add(group);
-        /*
-        for (int j = 0; j < group.size(); j++) {
-                System.out.println("group member: "+Arrays.toString(group.get(j)));
-            }
-        */
         
     }
 
@@ -311,11 +256,7 @@ public class FdepSparkAlgorithm implements Serializable{
 
     
     private void addAllDependenciesToResultReceiver(_FDTreeElement fds, BitSet activePath) {
-        /*
-        if (this.fdResultReceiver == null) {
-           // return;
-        }
-        */
+
         for (int attr = 1; attr <= numberAttributes; attr++) {
             if (fds.isFd(attr - 1) && activePath.cardinality() <= this.maxLhs) {
                 int j = 0;
@@ -326,12 +267,8 @@ public class FdepSparkAlgorithm implements Serializable{
                 
                 _ColumnCombination colCombination = new _ColumnCombination(columns);
                 _FunctionalDependency fdResult = new _FunctionalDependency(colCombination, columnIdentifiers.get(attr - 1));
-				//System.out.println(fdResult.toString());
 
-                // TODO zapis vysledkov do listu?
                 input.receiveResult(fdResult);
-
-                //fdResultReceiver.receiveResult(fdResult);
             }
         }
 
@@ -353,11 +290,7 @@ public class FdepSparkAlgorithm implements Serializable{
      * //@throws ColumnNameMismatchException
      */
     private void addAllDependenciesToResultReceiver() {
-        /*
-        if (this.fdResultReceiver == null) {
-          //  return;
-        }
-        */
+
         this.addAllDependenciesToResultReceiver(posCoverTree, new BitSet());
     }
 

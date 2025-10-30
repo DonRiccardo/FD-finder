@@ -32,3 +32,4 @@ replay_pid*
 
 /backend/JobService/jobs
 /backend/DataService/data
+/backend/JobService/data

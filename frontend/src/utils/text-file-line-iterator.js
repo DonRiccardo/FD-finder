@@ -1,5 +1,8 @@
 
-
+/**
+ * Read a text file line by line.   
+ * @param {URL} fileURL 
+ */
 export async function* makeTextFileLineIterator(fileURL) {
         const utf8Decoder = new TextDecoder("utf-8");
         let response = await fetch(fileURL);

@@ -10,8 +10,11 @@ import JobsAll from './pages/jobs-all';
 import JobsCreate from './pages/jobs-add';
 import JobsResults from './pages/jobs-results';
 
-function App() {
-  
+/**
+ * Main app
+ * @returns {JSX.Element} main app
+ */
+function App() {  
 
   return (
     <>
@@ -33,6 +36,10 @@ function App() {
   )
 }
 
+/**
+ * 
+ * @returns {JSX.Element} welcoming homepage
+ */
 function HomePage() {
   return (
     <Box
@@ -66,6 +73,10 @@ function HomePage() {
 
 }
 
+/**
+ * 
+ * @returns {JSX.Element} page to upload new dataset
+ */
 function DatasetsAdd() {
   return (
     <>
@@ -78,6 +89,10 @@ function DatasetsAdd() {
 
 }
 
+/**
+ * 
+ * @returns {JSX.Element} page to show all datasets
+ */
 function Datasets() {
   return (
     <>
@@ -89,6 +104,10 @@ function Datasets() {
   );
 }
 
+/**
+ * 
+ * @returns {JSX.Element} page to show all jobs
+ */
 function Jobs() {
   return (
     <>
@@ -100,6 +119,10 @@ function Jobs() {
   );
 }
 
+/**
+ * 
+ * @returns {JSX.Element} page to create new Job
+ */
 function JobsAdd() {
   return (
     <>
@@ -111,6 +134,10 @@ function JobsAdd() {
   ) 
 }
 
+/**
+ * 
+ * @returns {JSX.Element} page to create Job with specified datsetId
+ */
 function JobDataset() {
   const {datasetId} = useParams();
   return (
@@ -123,6 +150,9 @@ function JobDataset() {
   )
 }
 
+/**
+ * @returns {JSX.Element} page to show Job results
+ */
 function JobResult() {
   return(
     <>
@@ -134,6 +164,10 @@ function JobResult() {
   )
 }
 
+/**
+ * 
+ * @returns {JSX.Element} page to show Job results of specified jobId
+ */
 function JobResultId() {
   const {jobId} = useParams();
   return(

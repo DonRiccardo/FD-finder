@@ -44,15 +44,34 @@ const styleList = {
     backgroundColor: 'background.paper',
 };
 
+/**
+ * Round number to 2 decimal places or return 0.
+ * @param {Number} n 
+ * @returns 
+ */
 const roundOrZero = (n) => 
     (typeof n === 'number' && !isNaN(n)) ? Number(n.toFixed(2)) : 0;
 
+/**
+ * Round number to 2 decimal places and convert to MegaBytes or return 0.
+ * @param {Number} n 
+ * @returns 
+ */
 const roundOrZeroAndMegaBytes = (n) => 
     (typeof n === 'number' && !isNaN(n)) ? Number((n / (1024 * 1024)).toFixed(2)) : 0;
 
+/**
+ * Round number to 2 decimal places and convert to percentage or return 0.
+ * @param {Number} n
+ */
 const roundOrZeroAndPercentage = (n) => 
     (typeof n === 'number' && !isNaN(n)) ? Number((n * 100).toFixed(2)) : 0;
 
+/**
+ * Format statistics values to correct format and round them.
+ * @param {Object} stats statistics of Job 
+ * @returns {Object} formatted statistics
+ */
 function formatJobAlgorithmStats(stats) {
     return {
         timeMin: roundOrZero(stats.timeMin),
@@ -70,6 +89,12 @@ function formatJobAlgorithmStats(stats) {
     };
 }
 
+/**
+ * Render Job Results page.
+ * @param {Object} props - input parameters
+ * @param {Number} props.jobId - Job ID to show results for
+ * @returns {JSX.Element} page
+ */
 export default function JobsResults({ jobId }) {
 
     const [availableJobs, setAvailableJobs] = useState([]);
@@ -92,92 +117,87 @@ export default function JobsResults({ jobId }) {
 
     const fetchResultsOfJob = async function () {
             
-    if (!selectedJob) {
-        resetForm();
-        setFetchingResults(false);
-        return;
-    }
-    const job = availableJobs[selectedJob];
-
-    fetch(dataServiceURL+"/datasets/" + job.dataset)
-    .then(res => {
-        if (!res.ok) throw new Error("Failed to fetch dataset metadata");
-        return res.json();
-    })
-    .then(datasetMetadata => {
-        setDataset(datasetMetadata);
-
-        if (job.status === "DONE") {
-            return Promise.all([
-                fetch(jobServiceURL+"/jobs/" + job.id + "/results")
-                .then(r => { 
-                    if (!r.ok) throw new Error("Failed to fetch job stats"); 
-                    return r.json();
-                }),
-                fetch(jobServiceURL+"/jobs/" + job.id + "/results/graphdata")
-                .then(r => { 
-                    if (!r.ok) throw new Error("Failed to fetch graph data"); 
-                    return r.json(); 
-                })
-            ])
-            .then(([statsJson, graphJson]) => {
-                const formattedStats = {};
-
-                for (const [key, value] of Object.entries(statsJson || {})) {
-                
-                    formattedStats[key] = formatJobAlgorithmStats(value);
-                }
-
-                setJobStats(formattedStats);
-                setGraphData(graphJson);
-            });
-        } 
-        else {
-
-            setJobStats(null);
-            setGraphData(null);
+        if (!selectedJob) {
+            resetForm();
+            setFetchingResults(false);
+            return;
         }
-    })
-    .catch((error) => {
-        console.error("Error fetching job results or dataset:", error);
-    })
-    .finally(() => {
-        setFetchingResults(false);
-    });
-}
+        const job = availableJobs[selectedJob];
+
+        fetch(dataServiceURL+"/datasets/" + job.dataset)
+        .then(res => {
+            if (!res.ok) throw new Error("Failed to fetch dataset metadata");
+            return res.json();
+        })
+        .then(datasetMetadata => {
+            setDataset(datasetMetadata);
+
+            if (job.status === "DONE") {
+                return Promise.all([
+                    fetch(jobServiceURL+"/jobs/" + job.id + "/results")
+                    .then(r => { 
+                        if (!r.ok) throw new Error("Failed to fetch job stats"); 
+                        return r.json();
+                    }),
+                    fetch(jobServiceURL+"/jobs/" + job.id + "/results/graphdata")
+                    .then(r => { 
+                        if (!r.ok) throw new Error("Failed to fetch graph data"); 
+                        return r.json(); 
+                    })
+                ])
+                .then(([statsJson, graphJson]) => {
+                    const formattedStats = {};
+
+                    for (const [key, value] of Object.entries(statsJson || {})) {
+                    
+                        formattedStats[key] = formatJobAlgorithmStats(value);
+                    }
+
+                    setJobStats(formattedStats);
+                    setGraphData(graphJson);
+                });
+            } 
+            else {
+
+                setJobStats(null);
+                setGraphData(null);
+            }
+        })
+        .catch((error) => {
+            console.error("Error fetching job results or dataset:", error);
+        })
+        .finally(() => {
+            setFetchingResults(false);
+        });
+    }
 
 
     useEffect(() => {
         setLoading(true);
         websocketListen(setAvailableJobs);
-
-        async function fetchJobs() {
             
-            fetch(jobServiceURL+"/jobs")
-            .then(response => {
-                if (!response.ok) throw new Error("Failed to fetch jobs");
-                return response.json();
-            })
-            .then(data => {
-                const jobs = data._embedded?.jobList || [];
-                const jobDict = {};
-                jobs.forEach(job => {
-                    jobDict[job.jobName] = {
-                        ...job,
-                    };
-                });
-
-                setAvailableJobs(jobDict);
-            })
-            .catch(error => {
-                console.error("Error fetching jobs:", error);
-            })
-            .finally(() => {
-                setLoading(false);
+        fetch(jobServiceURL+"/jobs")
+        .then(response => {
+            if (!response.ok) throw new Error("Failed to fetch jobs");
+            return response.json();
+        })
+        .then(data => {
+            const jobs = data._embedded?.jobList || [];
+            const jobDict = {};
+            jobs.forEach(job => {
+                jobDict[job.jobName] = {
+                    ...job,
+                };
             });
-        };
-        
-        fetchJobs();
+
+            setAvailableJobs(jobDict);
+        })
+        .catch(error => {
+            console.error("Error fetching jobs:", error);
+        })
+        .finally(() => {
+            setLoading(false);
+        });
 
     }, []);
 
@@ -203,6 +223,10 @@ export default function JobsResults({ jobId }) {
         fetchResultsOfJob();
     }, [selectedJob]);
 
+    /**
+     * Show found FDs for specified JobResult object.
+     * @param {Number} jobResultId ID of JobResult object
+     */
     const handleShowFDs = async (jobResultId) => {
         
         fetch(jobServiceURL+"/jobs/results/" + jobResultId + "/fds")
@@ -234,6 +258,9 @@ export default function JobsResults({ jobId }) {
         });
     };
 
+    /**
+     * Reset form values.
+     */
     const resetForm = () => {
         
         setDataset(null);
@@ -245,11 +272,19 @@ export default function JobsResults({ jobId }) {
         setSelectedIterationToShowFds("");
     };
 
+    /**
+     * Handle back from FDs view to iterations view.
+     */
     const handleBack = () => {
         setShowFds(false);
         setSelectedIterationToShowFds("");
     }
 
+    /**
+     * Handle download of found FDs file.
+     * @param {Number} iterationId ID of iteration
+     * @returns 
+     */
     const handleDownload = async (iterationId) => {
         if (!Number.isInteger(iterationId)){
             alert("Invalid iteration ID.");
@@ -590,7 +625,11 @@ export default function JobsResults({ jobId }) {
 
 }
 
-
+/**
+ * Create tabpanel to navigate between statistics, FDs and graphs.
+ * @param {Object} props - input parameters
+ * @returns {JSX.Element} tabpanel
+ */
 function CustomTabPanel(props) {
   const { children, value, index, ...other } = props;
 
@@ -613,7 +652,13 @@ CustomTabPanel.propTypes = {
   value: PropTypes.number.isRequired,
 };
 
-
+/**
+ * Create List showing statistics of algorithm for Job.
+ * Showing Min/Avg/Max values.
+ * @param {Object} props - input parameters
+ * @param {Object} props.stats - statistics of algorithm for Job
+ * @returns {JSX.Element} statistics of algorithm for Job
+ */
 function JobAlgorithmStats({ stats }) {
 
     return (
@@ -669,7 +714,13 @@ function JobAlgorithmStats({ stats }) {
 }
 
 
-
+/**
+ * Generate table to show FDs.
+ * 2 columns (LHS, RHS)
+ * @param {Object} props - input parameters
+ * @param {Array} props.fds - array of FDs
+ * @returns {JSX:Element} FDs table
+ */
 function FDTable({ fds }) {
 
   return (
@@ -692,7 +743,12 @@ function FDTable({ fds }) {
   );
 }
 
-
+/**
+ * Create datae and generate CPU and Memory graphs.
+ * @param {Object} props - input parameters
+ * @param {Object} props.data - graph data
+ * @returns {JSX.Element} graphs
+ */
 function GeneratteCpuMemoryGraphs({ data }) {
 
     const keys = Object.keys(data || {});
@@ -723,7 +779,6 @@ function GeneratteCpuMemoryGraphs({ data }) {
             memoryData.push(entry.usedMemory);
         }
 
-
         graphDataCpu.datasets.push(
             {
                 label: key,
@@ -731,8 +786,7 @@ function GeneratteCpuMemoryGraphs({ data }) {
                 borderColor: color,
                 backgroundColor: color
             }
-        )
-    
+        );    
 
         graphDataMemory.datasets.push(
             {
@@ -741,10 +795,9 @@ function GeneratteCpuMemoryGraphs({ data }) {
                 borderColor: color,
                 backgroundColor: color,
             }
-        )
+        );
 
     });
-
 
     const optionsCpu = {
         responsive: true,
@@ -785,6 +838,12 @@ function GeneratteCpuMemoryGraphs({ data }) {
     )
 }
 
+/**
+ * Set color based on index and total number of items.
+ * @param {Number} index of algorithm
+ * @param {Number} total number of selected algorithms
+ * @returns 
+ */
 function generateColor(index, total) {
   const hue = (index * 360 / Math.max(1, total)) % 360;
   return `hsl(${hue}, 70%, 50%)`;

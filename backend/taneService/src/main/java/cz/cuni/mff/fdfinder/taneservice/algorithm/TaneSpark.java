@@ -1,7 +1,3 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- */
-
 package cz.cuni.mff.fdfinder.taneservice.algorithm;
 
 import cz.cuni.mff.fdfinder.taneservice.algorithm.model._CSVInput;
@@ -15,13 +11,9 @@ import org.apache.spark.sql.SparkSession;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.HashSet;
-import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
 
 /**
- *
+ * Class initializing algorithm execution.
  * @author Richard
  */
 public class TaneSpark {
@@ -61,7 +53,11 @@ public class TaneSpark {
         loadInput();
     }
 
-    private void loadInput() throws IOException {
+    /**
+     * Reads dataset into {@link _Input} and prepare it for execution.
+     * @throws UnsupportedOperationException if the dataset format is not supported
+     */
+    private void loadInput() throws UnsupportedOperationException {
         System.out.println("SPARK starting to create INPUT");
 
         if (fileFormat == FileFormat.CSV) {
@@ -79,7 +75,11 @@ public class TaneSpark {
         }
     }
 
-    public HashSet<_FunctionalDependency> startAlgorithm() throws Exception {
+    /**
+     * Sets and starts algorithm execution.
+     * @return {@link HashSet} of ({@link _FunctionalDependency}) founded in the datasetň
+     */
+    public HashSet<_FunctionalDependency> startAlgorithm() {
 
         long startTime = System.currentTimeMillis();
         System.out.println("START Spark: " + startTime);

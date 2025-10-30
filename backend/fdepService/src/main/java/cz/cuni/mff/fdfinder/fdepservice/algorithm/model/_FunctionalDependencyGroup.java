@@ -1,7 +1,3 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package cz.cuni.mff.fdfinder.fdepservice.algorithm.model;
 
 import it.unimi.dsi.fastutil.ints.IntArrayList;
@@ -12,8 +8,7 @@ import it.unimi.dsi.fastutil.ints.IntSet;
 import java.util.List;
 
 /**
- *
- * @author pavel.koupil
+ * Create FD from {@link Integer} values representing columns.
  */
 public class _FunctionalDependencyGroup {
 
@@ -26,11 +21,19 @@ public class _FunctionalDependencyGroup {
 		this.values.addAll(values);
 	}
 
+	/**
+	 *
+	 * @return {@link Integer} of attribute on RHS
+	 */
 	public int getAttributeID() {
 
 		return this.attribute;
 	}
 
+	/**
+	 *
+	 * @return {@link IntList} of attributes on LHS
+	 */
 	public IntList getValues() {
 
 		IntList returnValue = new IntArrayList();
@@ -81,6 +84,12 @@ public class _FunctionalDependencyGroup {
 		return true;
 	}
 
+	/**
+	 * Create a {@link _FunctionalDependency} from set data.
+	 * @param tableIdentifier {@link String} name of the table (dataset)
+	 * @param columnNames List ({@link String}) of column names
+	 * @return builded {@link _FunctionalDependency}
+	 */
 	public _FunctionalDependency buildDependency(String tableIdentifier, List<String> columnNames) {
 
 		_FunctionalDependency._ColumnIdentifier[] combination = new _FunctionalDependency._ColumnIdentifier[this.values.size()];

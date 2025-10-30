@@ -18,6 +18,10 @@ import { websocketListen, formatJobMetadaata } from "../utils/websocket-jobs";
 
 const jobServiceURL = import.meta.env.VITE_JOBSERVICE_URL;
 
+/**
+ * Render DataGrid to show all created Jobs.
+ * @returns {JSX.Element} jobs DataGrid
+ */
 export default function JobssAll() {
 
     const [pageSize, setPageSize] = useState(20);
@@ -52,45 +56,57 @@ export default function JobssAll() {
         websocketListen(setRows);
     }, []);
 
+    /**
+     * Start (run) Job if possible.
+     * @param {*} row Job object
+     * @returns 
+     */
     const runJob = (row) => async () => {
-        if (row.canRun) {
-            fetch(`${jobServiceURL}/jobs/${row.id}/start`, {  
-                method: 'POST',
-            })
-            .then((response) => {
-                if (response.ok) {
-                    fetchJobs(); 
-                } else {
-                    alert(`Failed to start job "${row.id}".`);
-                }
-            })
-            .catch((error) => {
-                console.error("Error starting job:", error);
-                alert(`Error starting job "${row.id}".`);
-            });
-        }
+        if (!row.canRun) { return; }
+
+        fetch(`${jobServiceURL}/jobs/${row.id}/start`, {  
+            method: 'POST',
+        })
+        .then((response) => {
+            if (response.ok) {
+                fetchJobs(); 
+            } else {
+                alert(`Failed to start job "${row.id}".`);
+            }
+        })
+        .catch((error) => {
+            console.error("Error starting job:", error);
+            alert(`Error starting job "${row.id}".`);
+        });        
     }
 
+    /**
+     * Cancel (stop) running Job if possible.
+     * @param {*} row Job object
+     * @returns 
+     */
     const cancelJob = (row) => async () => {
-        if (row.canCancel) {
-            fetch(`${jobServiceURL}/jobs/${row.id}/cancel`, {  
-                method: 'DELETE', 
-            })
-            .then((response) => {
-                if (response.ok) {
-                    fetchJobs();
-                } else {
-                    alert(`Failed to cancel job "${row.id}".`);
-                }   
-            })
-            .catch((error) => {
-                console.error("Error cancelling job:", error);
-                alert(`Error cancelling job "${row.id}".`);
-            });
-        }
+        if (!row.canCancel) { return; }
+
+        fetch(`${jobServiceURL}/jobs/${row.id}/cancel`, {  
+            method: 'DELETE', 
+        })
+        .then((response) => {
+            if (response.ok) {
+                fetchJobs();
+            } else {
+                alert(`Failed to cancel job "${row.id}".`);
+            }   
+        })
+        .catch((error) => {
+            console.error("Error cancelling job:", error);
+            alert(`Error cancelling job "${row.id}".`);
+        });        
     }
     
-
+    /**
+     * Columns shown in Job DataGrid.
+     */
     const columns = [
         {
             field: "actions",
@@ -183,6 +199,10 @@ export default function JobssAll() {
         },
     ];
 
+    /**
+     * Delete Job from backend.
+     * @param {*} row Job object
+     */
     const handleDelete = (row) => {
         if (row.canDelete) {
             if (window.confirm(`Are you sure you want to delete job "${row.id}"? This action cannot be undone.`)) {
@@ -237,7 +257,10 @@ export default function JobssAll() {
     );
 }
 
-
+/**
+ * Tollbar for Job DataGrid with selecting columns to show and filtering.
+ * @returns {JSX:Element} Toolbal element
+ */
 function EditToolbar() {
   return (
     <Toolbar>
@@ -261,9 +284,7 @@ function EditToolbar() {
                 </ToolbarButton>
             )}
             />
-        </Tooltip>
-
-      
+        </Tooltip>      
     </Toolbar>
   );
 }

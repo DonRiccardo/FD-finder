@@ -1,5 +1,9 @@
 import { Link, useMatch, useResolvedPath } from "react-router-dom"
 
+/**
+ * Create Navigatio bar to navigate between main pages.
+ * @returns {JSX.Element} navigation bar
+ */
 export default function Navbar() {
     return (
         <nav className="navbar">
@@ -15,6 +19,13 @@ export default function Navbar() {
     );
 }
 
+/**
+ * Create custom link for navigation bar.
+ * @param {Object} props - input parameters
+ * @param {string} props.to - link path
+ * @param {JSX.Element} props.children - link children
+ * @returns {JSX.ELement} custom link
+ */
 function CustomLink({ to, children, ...props }) {
   const resolvedPath = useResolvedPath(to)
   const isActive = useMatch({ path: resolvedPath.pathname, end: true })

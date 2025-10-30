@@ -17,21 +17,18 @@ import java.util.BitSet;
 import java.util.List;
 
 /**
- *
- * @author Richard
+ * Class for generating {@link _StrippedPartitionSpark}
  */
 public class _StrippedPartitionGenerator {
-    
-        public static String nullValue = "null#" + Math.random();
 
-	private JavaPairRDD<Integer, _StrippedPartitionSpark> returnValue;
+    private JavaPairRDD<Integer, _StrippedPartitionSpark> returnValue;
 
 	//private Int2ObjectMap<Map<String, LongList>> translationMaps = new Int2ObjectOpenHashMap<>();
 
 	public _StrippedPartitionGenerator() {
 	}
 
-	public JavaPairRDD<Integer, _StrippedPartitionSpark> execute(_Input input) throws Exception {
+	public JavaPairRDD<Integer, _StrippedPartitionSpark> execute(_Input input) {
 
 		// nacitani dat, vytvoreni stripped partitions
                 this.returnValue = input.getRddData()
@@ -45,10 +42,7 @@ public class _StrippedPartitionGenerator {
                                 //BitSet b = new BitSet();
                                 //b.set(i);
                                 
-                                // ignorovanie NULL hodnot, vysledkom je, ze kazda bude ako jedinecna hodnota
-                                if (value == null){
-                                    continue;
-                                }
+
                                 
                                 LongArrayList l = new LongArrayList();  
                                 l.add(tuple._2);

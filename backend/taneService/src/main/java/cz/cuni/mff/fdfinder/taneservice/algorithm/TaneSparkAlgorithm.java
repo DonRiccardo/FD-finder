@@ -19,7 +19,7 @@ import java.io.Serializable;
 import java.util.*;
 
 /**
- *
+ * Class representing actual working algorithm.
  * @author Richard
  */
 public class TaneSparkAlgorithm implements Serializable{
@@ -49,9 +49,11 @@ public class TaneSparkAlgorithm implements Serializable{
     private Map<BitSet, CombinationHelperSpark> level0 = null;
     private JavaPairRDD<BitSet, CombinationHelperSpark> level1 = null;
     private JavaPairRDD<BitSet, List<BitSet>> prefix_blocks = null;
-    
-    
-    public void execute() throws Exception{
+
+    /**
+     * Run algorithm
+     */
+    public void execute() {
         
         loadData();
         
@@ -94,50 +96,32 @@ public class TaneSparkAlgorithm implements Serializable{
         
         level1 = context.parallelizePairs(listLVL1);
         listLVL1 = null;
-        
-        // while loop (main part of TANE)
-        /*
-        Map<BitSet, CombinationHelperSpark> lvl = level1.collectAsMap();
-        for (BitSet b:lvl.keySet()){
-            System.out.println(b.toString() +" "+lvl.get(b).isValid()+" RHSC: "+lvl.get(b).getRhsCandidates());
-        }
-        */
+
         int l = 0;
         while (level1.count()>0 && l < numberAttributes) {
-            //System.out.println("START "+l+". loop!");
-            //System.out.println("# ELEMENTS in LEVEL1, in "+l+". loop START: "+level1.keys().count());
             // compute dependencies for a level
             System.out.println("\n START LVL: "+l +"\n");
-            System.out.println("new level FDS #: "+this.input.getFoundFds().size());
             computeDependencies();
-            //System.out.println("# ELEMENTS in LEVEL1, in "+l+". loop COMDEP: "+level1.keys().count());
+
             // prune the search space
             prune();
-            //System.out.println("# ELEMENTS in LEVEL1, in "+l+". loop PRUNE: "+level1.keys().count());
-            
-            /*
-            Map<BitSet, CombinationHelperSpark> lvl1 = level1.collectAsMap();
-            for (BitSet b:lvl1.keySet()){
-                System.out.println(b.toString() +" "+lvl1.get(b).isValid()+" RHSC: "+lvl1.get(b).getRhsCandidates());
-            }           
-            */
+
             // compute the combinations for the next level
             if (l >= maxLhs){
-                System.out.println("break FDS #: "+this.input.getFoundFds().size());
                 break;
             }
-            generateNextLevel();     
-             
-            
-            //System.out.println("# ELEMENTS in LEVEL1, in "+l+". loop GENLVL: "+level1.keys().count());           
-            //System.out.println("ENDING "+l+". loop.");
+            generateNextLevel();
             l++;
         }
-        System.out.println("return FDS #: "+this.input.getFoundFds().size());
     }
     
     // vytvorenie Stripped Partitions
-    private void loadData() throws Exception{
+
+    /**
+     * Load data and create {@link _StrippedPartitionSpark}
+     * @throws Exception
+     */
+    private void loadData() {
        
         this.numberAttributes = input.numberOfColumns();
         this.numberTuples = input.numberOfRows();
@@ -146,10 +130,11 @@ public class TaneSparkAlgorithm implements Serializable{
         plis = spGen.execute(this.input);
         System.out.println("SP DONE...");
     }
-    
+
+    /**
+     *
+     */
     private void computeDependencies() {
-        // inicializuje sa Cplus rovno v generovani noveho levlu
-        // initializeCplusForLevel();
         
         level1 = level1
                 .mapToPair(tuple -> {
@@ -175,7 +160,7 @@ public class TaneSparkAlgorithm implements Serializable{
                         
                         if(spX.getError() == spXwithoutA.getError()){
                             
-                            processFunctionalDependency((BitSet)Xclone.clone(), A, "Computation");
+                            processFunctionalDependency((BitSet)Xclone.clone(), A);
                            
                             // remove A from C_plus(X)    
                             BitSet newRhsCandidates = (BitSet) tuple._2.getRhsCandidates().clone();
@@ -203,7 +188,10 @@ public class TaneSparkAlgorithm implements Serializable{
                 });
 
     }
-    
+
+    /**
+     *
+     */
     private void prune(){
         
         Map<BitSet, CombinationHelperSpark> level1asMap = level1.collectAsMap();
@@ -236,7 +224,7 @@ public class TaneSparkAlgorithm implements Serializable{
                         if(intersect.get(A)){
 
                             BitSet lhs = (BitSet) tuple._1.clone();
-                            processFunctionalDependency(lhs, A, "Prune");
+                            processFunctionalDependency(lhs, A);
                             
                             BitSet newRhs = (BitSet) tuple._2.getRhsCandidates().clone();
                             newRhs.clear(A);
@@ -254,7 +242,12 @@ public class TaneSparkAlgorithm implements Serializable{
 
     }
 
-    
+    /**
+     *
+     * @param pt1
+     * @param pt2
+     * @return
+     */
    public _StrippedPartitionSpark multiply(_StrippedPartitionSpark pt1, _StrippedPartitionSpark pt2) {
         LongBigArrayBigList tTable;
         tTable = new LongBigArrayBigList(numberTuples);
@@ -296,26 +289,17 @@ public class TaneSparkAlgorithm implements Serializable{
 
         return new _StrippedPartitionSpark(result, noOfElements);
     }
-    
-    
-    
-    
+
+    /**
+     * Generates new level for finding FDs also initialize C+ for new level.
+     */
     private void generateNextLevel(){
         // LVL1 collectujem aj v PRUNE, aby som s tym mohol pracovat. Pouziva sa na overenie validity
         // narocne, ale nie je mozne pracovat s vnorenymi RDD
         level0 = level1.collectAsMap();
-        /*
-        for(BitSet b : level0.keySet()){
-            System.out.println("KEY: "+b+"VALUE: "+level0.get(b).toString());
-        }
-        */
-        
-        //System.out.println("po collectAsMap -> LVL1 "+level1.count());
-        
+
         level1 = null;
         buildPrefixBlocks();
-        //System.out.println("GENLVL after prefix blocks: "+prefix_blocks.collect().size()+" entities");
-        //System.out.println("GENERATING NEW LEVEL1...");
         level1 = prefix_blocks
                 .filter(x -> x._2.size() >= 2)
                 .flatMapToPair(tuple -> {
@@ -329,19 +313,16 @@ public class TaneSparkAlgorithm implements Serializable{
                 })
                 .filter(x -> checkSubsets(x._3()))
                 .mapToPair(tuple -> {
-                   // System.out.println("TUPLE: "+tuple._1()+" & "+tuple._2()+" OR "+tuple._3());
-                    
                     _StrippedPartitionSpark st = null;
                     CombinationHelperSpark ch = new CombinationHelperSpark();
                     
                     if (level0.get(tuple._1()).isValid() && level0.get(tuple._2()).isValid()) {
+
                         st = multiply(level0.get(tuple._1()).getPartition(), level0.get(tuple._2()).getPartition());
-                        //System.out.println("VALID in level0");
                     } else {
+
                         ch.setInvalid();
-                        //System.out.println("INVALID in level0");
                     }
-                    //System.out.println("NEW LVL BitSet: "+tuple._3()+" SP: "+st);
                     BitSet rhsCandidates = new BitSet();
 
                     ch.setPartition(st);
@@ -362,7 +343,6 @@ public class TaneSparkAlgorithm implements Serializable{
                         Xclone.clear(A);
                         BitSet CxwithoutA = level0.get(Xclone).getRhsCandidates();
                         rhsCwithoutA.add(new Tuple2<>(tuple, CxwithoutA));
-                      //  System.out.println("FOR "+tuple._1+" found "+Xclone+" with RHSC-> "+CxwithoutA);
                         Xclone.set(A);
                     }
 
@@ -373,21 +353,22 @@ public class TaneSparkAlgorithm implements Serializable{
                     return rhsCwithoutA.iterator();
                 })
                 .reduceByKey((x, y) -> {
-                    //System.out.println("X: "+x+" & Y: "+y);
                     BitSet newRhs = (BitSet) x.clone();
                     newRhs.and(y);
-                    //System.out.println("AND: "+newRhs);
                     return newRhs;
                 })
                 .mapToPair(c -> {
-                   // System.out.println("Setting RHSC "+c._1._1+"->"+c._2);
                     c._1._2.setRhsCandidates(c._2);
                     return c._1;
                 });
-        
-        //System.out.println("GENERATING NEW LEVEL1...DONE");
+
     }
-    
+
+    /**
+     * Get index of the last bit, that was set to {@code true}.
+     * @param bitset {@link BitSet} for finding last set index
+     * @return {@link Integer} index of the last set bit
+     */
     private int getLastSetBitIndex(BitSet bitset) {
         int lastSetBit = 0;
         for (int A = bitset.nextSetBit(0); A >= 0; A = bitset.nextSetBit(A + 1)) {
@@ -474,12 +455,15 @@ public class TaneSparkAlgorithm implements Serializable{
 
         return xIsValid;
     }
-    
 
-    private void processFunctionalDependency(BitSet XwithoutA, Integer A, String founder) {
-        System.out.println("FUNCTIONAL DEPENDENCY from "+founder+": "+XwithoutA.toString() +" -> "+ A);
+    /**
+     * Processing founf FD, adding it into a result.
+     * @param XwithoutA LHS of a FD
+     * @param A RHS of a FD
+     */
+    private void processFunctionalDependency(BitSet XwithoutA, Integer A) {
+
         this.input.receiveResult(new _FunctionalDependencyGroup(A, XwithoutA).buildDependency(this.input.relationName(), this.input.columnNames()));
-        System.out.println("FDS #: "+this.input.getFoundFds().size());
     }
 
     

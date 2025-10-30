@@ -48,7 +48,7 @@ public class _CMAX_SET_Generator implements Serializable{
 
 
 
-	public JavaPairRDD<Integer, _MAX_SET> generateMaxSet() throws Exception {
+	public JavaPairRDD<Integer, _MAX_SET> generateMaxSet() {
 
 		this.maxSetRDD = agreeSets
                         .flatMapToPair(ag -> {
@@ -76,7 +76,7 @@ public class _CMAX_SET_Generator implements Serializable{
 
 	
 
-	public JavaPairRDD<Integer, _CMAX_SET> generateCMAX_SETs() throws Exception {
+	public JavaPairRDD<Integer, _CMAX_SET> generateCMAX_SETs() {
 		
             if(this.maxSetRDD == null) this.generateMaxSet();
             

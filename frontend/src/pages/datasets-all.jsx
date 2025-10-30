@@ -1,11 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { Button, Box, Stack, IconButton } from "@mui/material";
 import {
-  DataGrid,
-  Toolbar,
-  ToolbarButton,
-  ColumnsPanelTrigger,
-  FilterPanelTrigger,
+  DataGrid, Toolbar, ToolbarButton,
+  ColumnsPanelTrigger, FilterPanelTrigger,
 } from "@mui/x-data-grid";
 import { Link } from "react-router-dom";
 import AddIcon from "@mui/icons-material/Add";
@@ -19,40 +16,40 @@ import Badge from '@mui/material/Badge';
 
 const dataServiceURL = import.meta.env.VITE_DATASERVICE_URL;
 
+/**
+ * Render saved dataset as Datagrid.
+ * @returns {JSX:Element} dataset DataGrid
+ */
 export default function DatasetsAll() {
 
     const [pageSize, setPageSize] = useState(20);
     const [rows, setRows] = useState([]);
 
     const fetchDatasets = React.useCallback(async () => {
-        try {
-            fetch(dataServiceURL+"/datasets")
-            .then((response) => {
-                if(!response.ok) Promise.reject(response);
 
-                return response.json();
-            })
-            .then((data) => {
+        fetch(dataServiceURL+"/datasets")
+        .then((response) => {
+            if(!response.ok) Promise.reject(response);
 
-                const datasets = data._embedded?.datasetList || [];
+            return response.json();
+        })
+        .then((data) => {
 
-                const formatted = datasets.map((dataset) => ({
-                    ...dataset,
-                    canDelete: Boolean(dataset._links?.delete),
-                    canDownload: Boolean(dataset._links?.download),
-                    createdAt: dataset.createdAt ? new Date(dataset.createdAt.replace(/(\.\d{3})\d+/, "$1")) : null,
-                }));
+            const datasets = data._embedded?.datasetList || [];
 
-                setRows(formatted);
-            })
-            .catch((error) => {
-                console.error("Error fetching datasets:", error);
-            });
-            
-        }
-        catch (error) {
-            console.error("Error fetching datasets TRY:", error);
-        }
+            const formatted = datasets.map((dataset) => ({
+                ...dataset,
+                canDelete: Boolean(dataset._links?.delete),
+                canDownload: Boolean(dataset._links?.download),
+                createdAt: dataset.createdAt ? new Date(dataset.createdAt.replace(/(\.\d{3})\d+/, "$1")) : null,
+            }));
+
+            setRows(formatted);
+        })
+        .catch((error) => {
+            console.error("Error fetching datasets:", error);
+        });
+
     }, []);
 
     useEffect(() => {
@@ -94,7 +91,7 @@ export default function DatasetsAll() {
                         variant="outlined" 
                         size="small"
                         sx={{ mr: 1 }}
-                        disabled={!params.row.canDelete}    // TODO zmenit na canDownload
+                        disabled={!params.row.canDownload} 
                         onClick={() => handleDownload(params.row)}
                     >
                         <DownloadIcon />
@@ -121,6 +118,10 @@ export default function DatasetsAll() {
        }
     ];
 
+    /**
+     * Delete dataset from backend.
+     * @param {Object} row dataset object
+     */
     const handleDelete = (row) => {
         if (row.canDelete) {
             if (window.confirm(`Are you sure you want to delete dataset "${row.name}"? This action cannot be undone.`)) {
@@ -143,26 +144,30 @@ export default function DatasetsAll() {
         }
     }
 
+    /**
+     * Handle download of dataset file.
+     * @param {Object} row dataset object
+     * @returns 
+     */
     const handleDownload = (row) => {
-        if (row.canDownload) {
-            fetch(row._links.download.href, {
-                method: 'GET',
-            })
-            .then((response) => {
-                if (response.ok) {
-                    return response;
-                }
-                else {
-                    throw new Error("Network response was not ok");
-                }   
-            })
-            .then((response) => {
-                
-                const disposition = response.headers.get("Content-Disposition");
-                let filename = "dataset_" + row.id;
+        if (!row.canDownload) { return; }
 
-                if (disposition && disposition.indexOf("filename") !== -1) {
-                    filename = disposition.split("filename=")[1].replace(/"/g, "").trim();
+        fetch(row._links.download.href, {
+            method: 'GET',
+        })
+        .then((response) => {
+            if (!response.ok) {
+                throw new Error("Network response was not ok");                
+            }
+            return response;  
+        })
+        .then((response) => {
+            
+            const disposition = response.headers.get("Content-Disposition");
+            let filename = "dataset_" + row.id;
+
+            if (disposition && disposition.indexOf("filename") !== -1) {
+                filename = disposition.split("filename=")[1].replace(/"/g, "").trim();
 
                 const url = window.URL.createObjectURL(new Blob([response.blob]));
                 const link = document.createElement('a');
@@ -174,13 +179,13 @@ export default function DatasetsAll() {
                 link.remove();
 
                 window.URL.revokeObjectURL(url);
-                }
-            })
-            .catch((error) => {
-                console.error("Error downloading dataset:", error);
-                alert(`Error downloading dataset "${row.name}".`);
-            });
-        }       
+            }
+        })
+        .catch((error) => {
+            console.error("Error downloading dataset:", error);
+            alert(`Error downloading dataset "${row.name}".`);
+        });
+             
     }
 
 
@@ -212,6 +217,10 @@ export default function DatasetsAll() {
     );
 }
 
+/**
+ * Tollbar for dataset DataGrid with selecting columns to show and filtering.
+ * @returns {JSX:Element} Toolbal element
+ */
 function EditToolbar() {
   return (
     <Toolbar>        
@@ -235,9 +244,7 @@ function EditToolbar() {
                 </ToolbarButton>
             )}
             />
-        </Tooltip>
-
-      
+        </Tooltip>      
     </Toolbar>
   );
 }

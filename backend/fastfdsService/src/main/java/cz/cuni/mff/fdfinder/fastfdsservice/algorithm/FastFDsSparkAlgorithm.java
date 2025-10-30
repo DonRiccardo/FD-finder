@@ -10,11 +10,8 @@ import cz.cuni.mff.fdfinder.fastfdsservice.algorithm.service._StrippedPartitionG
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
-import scala.Tuple2;
 
 import java.io.Serializable;
-import java.util.BitSet;
-import java.util.HashSet;
 
 public class FastFDsSparkAlgorithm implements Serializable{
 
@@ -36,25 +33,10 @@ public class FastFDsSparkAlgorithm implements Serializable{
     }
 
     public void execute() {
-                
-        
 
         JavaPairRDD<Integer, _StrippedPartitionSpark> strippedPartitions = new _StrippedPartitionGenerator(relationships).execute(input);
-        /*
-        strippedPartitions.collect();
-        for (long i : relationships.keySet()) {
-            System.out.println(i+": "+relationships.get(i).toString());
-        }
-        */
+
         JavaRDD<_DifferenceSet> diff = new _DifferenceSetFromAgreeSetGenerator(relationships, input.numberOfColumns()).executeBottleneck(strippedPartitions);
- 
-        /*
-        List<_DifferenceSet> diffList = diff.collect();
-        System.out.println("DIIF: "+diffList.size()+" size");
-        for (_DifferenceSet d : diffList){
-            System.out.println(d.toString());
-        }
-        */
 
         new _FindCoversGenerator(input, maxLhs).execute(diff);
 

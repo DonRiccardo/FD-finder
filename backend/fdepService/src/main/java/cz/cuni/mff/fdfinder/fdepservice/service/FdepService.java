@@ -31,6 +31,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 
+/**
+ * Service for algorithm doing preparing, setting and running the algorithm.
+ */
 @Service
 public class FdepService {
 
@@ -62,6 +65,10 @@ public class FdepService {
         sparkContext = new JavaSparkContext(spark.sparkContext());
     }
 
+    /**
+     * Register a new job and starts it if nothing is running.
+     * @param job {@link JobDto} ready to run
+     */
     public void registerNewJob(JobDto job) {
 
         this.queue.offer(job);
@@ -71,6 +78,10 @@ public class FdepService {
         }
     }
 
+    /**
+     * Cancel a specified job. Kill it if the job is running.
+     * @param jobId {@link Long} job ID to cancel
+     */
     public void cancelJob(long jobId) {
         System.out.println("TRYING to CANCEL JOB: " + jobId);
 
@@ -94,6 +105,9 @@ public class FdepService {
         System.out.println("Job CANCEL " + jobId + " DONE");
     }
 
+    /**
+     * Start running a new job from the queue.
+     */
     private void startNext() {
 
         JobDto job = this.queue.poll();
@@ -130,12 +144,11 @@ public class FdepService {
         });
     }
 
-    public record JobResultsFDs(
-
-            JobResult jobResult,
-            List<_FunctionalDependency> foundFds
-    ) implements Serializable {};
-
+    /**
+     * Run a specified job.
+     * Downloads dataset, start algorithm, store results, send results, delete results and dataset.
+     * @param job {@link JobDto} to run
+     */
     private void runJob(JobDto job) {
         ServiceInstance serviceInstanceJob = discoveryClient.getInstances("jobservice").getFirst();
 
@@ -170,7 +183,7 @@ public class FdepService {
 
                 System.out.println("FDEP - subJOB Spark finished at TIME: " + jobResult.getEndTime());
 
-                processOneJobResult(new JobResultsFDs(jobResult, foundFds), job.getId());
+                processOneJobResult(jobResult, foundFds, job.getId());
                 updateStatus(jobResult.getId(), JobStatus.DONE, serviceInstanceJob);
 
             }
@@ -179,7 +192,7 @@ public class FdepService {
 
         }
         catch (IOException e){
-
+            // dataset was empty
             System.err.println("IOEX Error starting job " + currentJob.getId() + ": " + e.getMessage());
             updateStatus(currentJob.getJobResults().getFirst().getId(), JobStatus.FAILED, serviceInstanceJob);
 
@@ -187,15 +200,17 @@ public class FdepService {
         catch (Exception e) {
 
             if (cancelled.get() && e instanceof SparkException) {
-
-                System.out.println("FDEP - cancelled Spark Job: " + e.getMessage());
+                // thrown if job is canceled while running
+                System.out.println("DEP-MINER - cancelled Spark Job: " + e.getMessage());
 
             }
             else if (currentJobResult != null) {
+                // some job iteration throws exception
                 System.err.println("Error starting job, current result ID: " + currentJobResult.getId() + ": " + e.getMessage());
                 updateStatus(currentJobResult.getId(), JobStatus.FAILED, serviceInstanceJob);
             }
             else {
+                // not possible to start the job
                 System.err.println("Error starting job " + currentJob.getId() + ": " + e.getMessage());
                 for (JobResult jobResult : job.getJobResults()) {
                     updateStatus(jobResult.getId(), JobStatus.FAILED, serviceInstanceJob);
@@ -206,16 +221,29 @@ public class FdepService {
         finally {
 
             deleteDataset(datasetData);
+            if (currentJobResult != null) monitorService.stopMonitoring(currentJobResult.getId());
         }
 
     }
 
+    /**
+     * Record to store dataset metadata and path to the dataset.
+     * @param dataset {@link DatasetDto} data
+     * @param targetPathDataset {@link Path} to the dataset
+     */
     public record DatasetData(
 
             DatasetDto dataset,
             Path targetPathDataset
     ) implements Serializable {};
 
+    /**
+     * Get metadata and download dataset from DataService.
+     * Store dataset locally.
+     * @param job {@link JobDto} to run
+     * @return {@link DatasetData} data
+     * @throws IOException if dataset is empty
+     */
     private DatasetData getMetadataAndDownloadDataset(JobDto job) throws IOException {
         // get metadata about DATASET
         ServiceInstance serviceInstanceData = discoveryClient.getInstances("dataservice").getFirst();
@@ -253,6 +281,11 @@ public class FdepService {
         return new DatasetData(dataset, targetPathDataset);
     }
 
+    /**
+     * Deletes dataset used to finding FDs.
+     * Use only after all job iterations are DONE.
+     * @param datasetData {@link DatasetData} data
+     */
     private void deleteDataset(DatasetData datasetData) {
 
         if (datasetData == null) return;
@@ -265,31 +298,26 @@ public class FdepService {
         }
     }
 
-    private List<JobResultsFDs> generateOutputJobResults(List<JobResult> jobResults) {
-
-        List<JobResultsFDs> jobResultsFDs = new ArrayList<>();
-
-        for (JobResult jobResult : jobResults) {
-
-            jobResultsFDs.add(new JobResultsFDs(jobResult, new LinkedList<>()));
-        }
-
-        return jobResultsFDs;
-    }
-
+    /**
+     * Fully process results of one job iteration.
+     * Save found FDs to a file, send results to JobService (with deletion of a file of found FDs).
+     * @param jobResult  {@link JobResult} data from one job iteration
+     * @param fds List ({@link _FunctionalDependency}) found FDs in the dataset
+     * @param jobId {@link Long} id of a {@link JobDto}
+     */
     @Async
-    protected void processOneJobResult(JobResultsFDs jobResultsFDs, long jobId) {
+    protected void processOneJobResult(JobResult jobResult, List<_FunctionalDependency> fds, long jobId) {
 
         System.out.println("FDEP Processing result of ONE JOB");
-        if (jobResultsFDs == null) {
+        if (jobResult == null) {
 
             return;
         }
 
         try{
-            Path foundFdsFilePath = saveFoundFdsToResultFile(jobResultsFDs, jobId);
+            Path foundFdsFilePath = saveFoundFdsToResultFile(jobResult, fds, jobId);
 
-            sendResultsToJobService(jobResultsFDs.jobResult, foundFdsFilePath);
+            sendResultsToJobService(jobResult, foundFdsFilePath);
 
             System.out.println("FDEP Processing finished successfully");
         }
@@ -300,52 +328,30 @@ public class FdepService {
             System.out.println("FDEP Processing failed" + e.getMessage());
         }
         finally {
-            monitorService.deleteSnapshots(jobResultsFDs.jobResult.getId());
+            monitorService.deleteSnapshots(jobResult.getId());
         }
     }
 
-    private void processResults(List<JobResultsFDs> jobResultsFDs, long jobId) {
+    /**
+     * Save found FDs of one job iteration to a file.
+     * @param jobResult  {@link JobResult} data from one job iteration
+     * @param fds List ({@link _FunctionalDependency}) found FDs in the dataset
+     * @param jobId {@link Long} id of a {@link JobDto}
+     * @return {@link Path} to a file of found FDs
+     * @throws IOException problem writing to a file
+     */
+    private Path saveFoundFdsToResultFile(JobResult jobResult, List<_FunctionalDependency> fds, long jobId) throws IOException {
 
-        // TODO vystupne FD ulozit do suboru a poslat na JOBService
-        System.out.println("FDEP Processing result of job");
-        if (jobResultsFDs == null || jobResultsFDs.isEmpty()) {
+        jobResult.setNumFoundFd(fds.size());
 
-            return;
-        }
-
-        try{
-
-            for (JobResultsFDs jobResultsFD : jobResultsFDs) {
-
-                Path foundFdsFilePath = saveFoundFdsToResultFile(jobResultsFD,  jobId);
-
-                sendResultsToJobService(jobResultsFD.jobResult, foundFdsFilePath);
-            }
-
-            System.out.println("FDEP Processing finished successfully");
-        }
-        catch (FileAlreadyExistsException e){
-            System.out.println("FDEP Processing already exists");
-        }
-        catch (IOException e){
-            System.out.println("FDEP Processing failed" + e.getMessage());
-        }
-
-    }
-
-
-    private Path saveFoundFdsToResultFile(JobResultsFDs jobResultsFDs, long jobId) throws IOException {
-
-        jobResultsFDs.jobResult.setNumFoundFd(jobResultsFDs.foundFds.size());
-
-        Path targetPathResult = getFdsResultFilePath(jobResultsFDs.jobResult, jobId);
+        Path targetPathResult = getFdsResultFilePath(jobResult, jobId);
 
         Files.createDirectories(targetPathResult.getParent());
         Files.createFile(targetPathResult);
 
         FileWriter writer = new  FileWriter(targetPathResult.toFile());
 
-        for (_FunctionalDependency fd : jobResultsFDs.foundFds) {
+        for (_FunctionalDependency fd : fds) {
 
             writer.write(fd.toString()+"\n");
         }
@@ -354,6 +360,12 @@ public class FdepService {
         return targetPathResult;
     }
 
+    /**
+     * Send results of one job iteration to JobService.
+     * Deletes a file of found FDs at the end.
+     * @param jobResult {@link JobResult} job iteration data
+     * @param foundFdsFilePath {@link Path} to a file of found FDs
+     */
     private void sendResultsToJobService(JobResult jobResult, Path foundFdsFilePath) {
 
         if(!Files.exists(foundFdsFilePath)) {
@@ -390,7 +402,12 @@ public class FdepService {
 
     }
 
-    // update status of ONE JOB ITERATION -> JOB status is updated/computed automaticaly in JOB SERVICE
+    /**
+     * Update status of ONE JOB ITERATION -> JOB status is updated/computed automatically in JobService.
+     * @param jobResultId {@link Long} id of job iteration
+     * @param status new {@link JobStatus} of {@link JobResult}
+     * @param serviceInstanceJob URI to JobService
+     */
     private void updateStatus(Long jobResultId, JobStatus status, ServiceInstance serviceInstanceJob) {
         ResponseEntity<Void> response = restClient.patch()
                 .uri(serviceInstanceJob.getUri() + "/jobs/iteration/" + jobResultId + "/status")
@@ -401,12 +418,23 @@ public class FdepService {
 
     }
 
+    /**
+     * Get path to file storing found FDs in specified job iteration.
+     * @param jobResult {@link JobResult} data
+     * @param jobId {@link Long} id of Job
+     * @return {@link Path} to file
+     */
     private Path getFdsResultFilePath(JobResult jobResult, long jobId) {
         // fileName: job-ID-fdep-run-#-foundFDs.txt
         return Paths.get("datatmp/results/job-" + jobId
                 + "-fdep-run-" + jobResult.getIteration() + "-foundFDs.txt");
     }
 
+    /**
+     * Generate unique Spark context group ID for job
+     * @param jobId {@link Long}id of Job
+     * @return unique {@link String} ID
+     */
     private String getSparkContextGroupId(long jobId) {
 
         return "job"+jobId+"_"+ UUID.randomUUID();
