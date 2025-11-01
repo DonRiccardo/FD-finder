@@ -1,6 +1,6 @@
 package cz.cuni.mff.fdfinder.demoalgservice.service;
 
-import cz.cuni.mff.fdfinder.demoalgservice.algorithm.model._FunctionalDependency;
+import de.metanome.algorithms.depminer.depminer_helper.modules.container._FunctionalDependency;
 import cz.cuni.mff.fdfinder.demoalgservice.model.DatasetDto;
 import cz.cuni.mff.fdfinder.demoalgservice.model.JobDto;
 import cz.cuni.mff.fdfinder.demoalgservice.model.JobResult;
