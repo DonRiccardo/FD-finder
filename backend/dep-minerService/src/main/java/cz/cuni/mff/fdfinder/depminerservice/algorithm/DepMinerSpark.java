@@ -1,11 +1,11 @@
 package cz.cuni.mff.fdfinder.depminerservice.algorithm;
 
+import de.metanome.algorithms.depminer.depminer_algorithm.DepMinerSparkAlgorithm;
 import cz.cuni.mff.fdfinder.depminerservice.algorithm.model._CSVInput;
-import cz.cuni.mff.fdfinder.depminerservice.algorithm.model._FunctionalDependency;
+import de.metanome.algorithms.depminer.depminer_helper.modules.container._FunctionalDependency;
 import cz.cuni.mff.fdfinder.depminerservice.algorithm.model._Input;
 import cz.cuni.mff.fdfinder.depminerservice.algorithm.model._JSONInput;
 import cz.cuni.mff.fdfinder.depminerservice.model.FileFormat;
-import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.sql.SparkSession;
 
@@ -13,8 +13,6 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.HashSet;
 import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  * Class initializing algorithm execution.
@@ -84,7 +82,7 @@ public class DepMinerSpark {
 	/**
 	 * Sets and starts algorithm execution.
 	 * @return {@link HashSet} of ({@link _FunctionalDependency}) founded in the dataset
-	 * @throws Exception from {@link cz.cuni.mff.fdfinder.depminerservice.algorithm.service._FunctionalDependencyGenerator}
+	 * @throws Exception from {@link de.metanome.algorithms.depminer.depminer_algorithm.modules._FunctionalDependencyGenerator}
 	 */
 	public List<_FunctionalDependency> startAlgorithm() throws Exception {
 

@@ -1,6 +1,7 @@
 package cz.cuni.mff.fdfinder.fastfdsservice.algorithm.model;
 
 import com.google.common.collect.ImmutableList;
+import de.metanome.algorithms.fastfds.fastfds_helper.modules.container._FunctionalDependency;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.function.MapFunction;
 import org.apache.spark.sql.Dataset;

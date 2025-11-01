@@ -1,7 +1,7 @@
 package cz.cuni.mff.fdfinder.taneservice.service;
 
 import cz.cuni.mff.fdfinder.taneservice.algorithm.TaneSpark;
-import cz.cuni.mff.fdfinder.taneservice.algorithm.model._FunctionalDependency;
+import de.metanome.algorithms.depminer.depminer_helper.modules.container._FunctionalDependency;
 import cz.cuni.mff.fdfinder.taneservice.model.DatasetDto;
 import cz.cuni.mff.fdfinder.taneservice.model.JobDto;
 import cz.cuni.mff.fdfinder.taneservice.model.JobResult;

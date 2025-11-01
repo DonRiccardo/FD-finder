@@ -1,7 +1,7 @@
 package cz.cuni.mff.fdfinder.depminerservice.service;
 
 import cz.cuni.mff.fdfinder.depminerservice.algorithm.DepMinerSpark;
-import cz.cuni.mff.fdfinder.depminerservice.algorithm.model._FunctionalDependency;
+import de.metanome.algorithms.depminer.depminer_helper.modules.container._FunctionalDependency;
 import cz.cuni.mff.fdfinder.depminerservice.model.DatasetDto;
 import cz.cuni.mff.fdfinder.depminerservice.model.JobDto;
 import cz.cuni.mff.fdfinder.depminerservice.model.JobResult;

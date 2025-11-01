@@ -5,10 +5,11 @@
 package cz.cuni.mff.fdfinder.fdepservice.algorithm;
 
 import cz.cuni.mff.fdfinder.fdepservice.algorithm.model._CSVInput;
-import cz.cuni.mff.fdfinder.fdepservice.algorithm.model._FunctionalDependency;
+import de.metanome.algorithms.depminer.depminer_helper.modules.container._FunctionalDependency;
 import cz.cuni.mff.fdfinder.fdepservice.algorithm.model._Input;
 import cz.cuni.mff.fdfinder.fdepservice.algorithm.model._JSONInput;
 import cz.cuni.mff.fdfinder.fdepservice.model.FileFormat;
+import de.metanome.algorithms.fdep.FdepSparkAlgorithm;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.sql.SparkSession;
 

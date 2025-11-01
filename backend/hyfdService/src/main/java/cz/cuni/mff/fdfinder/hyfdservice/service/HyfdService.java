@@ -1,7 +1,7 @@
 package cz.cuni.mff.fdfinder.hyfdservice.service;
 
 import cz.cuni.mff.fdfinder.hyfdservice.algorithm.HyFDSpark;
-import cz.cuni.mff.fdfinder.hyfdservice.algorithm.model._FunctionalDependency;
+import de.metanome.algorithms.depminer.depminer_helper.modules.container._FunctionalDependency;
 import cz.cuni.mff.fdfinder.hyfdservice.model.DatasetDto;
 import cz.cuni.mff.fdfinder.hyfdservice.model.JobDto;
 import cz.cuni.mff.fdfinder.hyfdservice.model.JobResult;
