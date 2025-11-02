@@ -1,5 +1,8 @@
 package cz.cuni.mff.fdfinder.hyfdservice.model;
 
+/**
+ * Enum representing supported file formats.
+ */
 public enum FileFormat {
     CSV ("text/csv"),
     JSON ("text/json");

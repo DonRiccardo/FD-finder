@@ -13,7 +13,6 @@ import java.util.*;
 
 /**
  * Generates {@link _AgreeSet} objects from stripped partitions.
- * @author pavel.koupil
  */
 public class _AgreeSetGenerator {
 

@@ -17,6 +17,9 @@ import java.util.BitSet;
 import java.util.LinkedList;
 import java.util.List;
 
+/**
+ * A distributed implementation of the FDEP (Functional Dependency) discovery algorithm using Apache Spark.
+ */
 public class FdepSparkAlgorithm implements Serializable{
 
     private static final int GROUP_CAPACITY = 2000;
@@ -44,6 +47,11 @@ public class FdepSparkAlgorithm implements Serializable{
         this.groups = new ObjectArrayList<>();
     }
 
+    /**
+     * Sets the maximum allowed size for the left-hand side (LHS) of a dependency.
+     *
+     * @param maxLhs the desired maximum LHS size.
+     */
     private void setMaxLhs(int maxLhs){
 
         if (maxLhs < 0) {
@@ -57,6 +65,9 @@ public class FdepSparkAlgorithm implements Serializable{
 
     }
 
+    /**
+     * Executes the full FDEP algorithm in distributed mode.
+     */
     public void execute() {
 
         System.out.println("START Spark EXECUTE ");
@@ -73,6 +84,9 @@ public class FdepSparkAlgorithm implements Serializable{
         addAllDependenciesToResultReceiver();
     }
 
+    /**
+     * Initializes internal structures and loads metadata from the input.
+     */
     private void initialize() {
         loadData();
         setColumnIdentifiers();
@@ -98,6 +112,13 @@ public class FdepSparkAlgorithm implements Serializable{
         }
     }
 
+    /**
+     * Recursively computes the positive cover by generalizing dependencies
+     * based on the structure of the negative cover tree.
+     *
+     * @param negCoverSubtree a subtree of the negative cover.
+     * @param activePath      the current path of attributes (LHS) in traversal.
+     */
     private void calculatePositiveCover(_FDTreeElement negCoverSubtree, BitSet activePath) {
         for (int attr = 1; attr <= numberAttributes; attr++) {
             if (negCoverSubtree.isFd(attr - 1)) {
@@ -246,6 +267,9 @@ public class FdepSparkAlgorithm implements Serializable{
         
     }
 
+     /**
+     * Initializes the column identifier metadata for the input dataset.
+     */
     private void setColumnIdentifiers() {
 
         this.columnIdentifiers = new ObjectArrayList<_ColumnIdentifier>(
@@ -257,7 +281,12 @@ public class FdepSparkAlgorithm implements Serializable{
         }
     }
 
-    
+    /**
+     * Recursively adds all functional dependencies from the FD tree to the result receiver.
+     *
+     * @param fds        the current FD tree element being traversed.
+     * @param activePath the active attribute path (LHS attributes) in traversal.
+     */
     private void addAllDependenciesToResultReceiver(_FDTreeElement fds, BitSet activePath) {
 
         for (int attr = 1; attr <= numberAttributes; attr++) {

@@ -1,7 +1,7 @@
 package cz.cuni.mff.fdfinder.fastfdsservice.service;
 
 import cz.cuni.mff.fdfinder.fastfdsservice.algorithm.FastFDsSpark;
-import cz.cuni.mff.fdfinder.fastfdsservice.algorithm.model._FunctionalDependency;
+import de.metanome.algorithms.fastfds.fastfds_helper.modules.container._FunctionalDependency;
 import cz.cuni.mff.fdfinder.fastfdsservice.model.DatasetDto;
 import cz.cuni.mff.fdfinder.fastfdsservice.model.JobDto;
 import cz.cuni.mff.fdfinder.fastfdsservice.model.JobResult;
@@ -168,7 +168,7 @@ public class FastfdsService {
                 updateStatus(jobResult.getId(), JobStatus.RUNNING, serviceInstanceJob);
                 System.out.println("FastFDs - JOB running: " + job.getId());
 
-                // TODO initialize algorithm
+                // nitialize algorithm
                 FastFDsSpark algorithm = new FastFDsSpark(sparkContext, spark, datasetData.targetPathDataset,
                         datasetData.dataset.getName(), job.getSkipEntries(), job.getLimitEntries(),
                         job.getMaxLHS(), datasetData.dataset.getFileFormat(),
@@ -178,7 +178,6 @@ public class FastfdsService {
                 System.out.println("FastFDs - JOB started at TIME: " + jobResult.getStartTime());
                 monitorService.startMonitoring(jobResult.getId());
 
-                // TODO put found FDs from ALG result into List bellow
 
                 List<_FunctionalDependency> foundFds = algorithm.startAlgorithm();
 

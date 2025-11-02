@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.*;
  * Controller fo the FastFDsService.
  */
 @RestController
-@RequestMapping("/fastfds") // TODO change reequest mapping
+@RequestMapping("/fastfds")
 public class FastfdsController {
 
     private final FastfdsService fastfdsService;
@@ -28,7 +28,6 @@ public class FastfdsController {
     @PostMapping("/start/{id}")
     public ResponseEntity<?> start(@PathVariable Long id, @RequestBody JobDto job) {
 
-        // TODO - edit runJob() in DemoAlgService class
         fastfdsService.registerNewJob(job);
 
         return ResponseEntity.ok().build();
@@ -42,7 +41,6 @@ public class FastfdsController {
     @PostMapping("/cancel/{id}")
     public ResponseEntity<?> cancel(@PathVariable Long id) {
 
-        // TODO cancel job
         fastfdsService.cancelJob(id);
 
         return ResponseEntity.ok().build();

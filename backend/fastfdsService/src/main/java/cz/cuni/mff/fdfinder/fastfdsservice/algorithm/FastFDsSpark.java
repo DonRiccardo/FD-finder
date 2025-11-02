@@ -4,7 +4,8 @@
  */
 package cz.cuni.mff.fdfinder.fastfdsservice.algorithm;
 
-import cz.cuni.mff.fdfinder.fastfdsservice.algorithm.model._FunctionalDependency;
+import de.metanome.algorithms.fastfds.fastfds_helper.modules.container._FunctionalDependency;
+import de.metanome.algorithms.fastfds.FastFDsSparkAlgorithm;
 import cz.cuni.mff.fdfinder.fastfdsservice.algorithm.model._Input;
 import cz.cuni.mff.fdfinder.fastfdsservice.algorithm.model._CSVInput;
 import cz.cuni.mff.fdfinder.fastfdsservice.algorithm.model._JSONInput;

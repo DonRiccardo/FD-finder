@@ -6,7 +6,6 @@ import de.metanome.algorithms.depminer.depminer_helper.modules.container.*;
 /**
  * Represents a relation between tuples and their equivalence classes across multiple attributes.
  * Each tuple is linked to a set of (attributeID, equivalenceClassID) pairs.
- * @author pavel.koupil
  */
 public class _TupleEquivalenceClassRelation {
 
