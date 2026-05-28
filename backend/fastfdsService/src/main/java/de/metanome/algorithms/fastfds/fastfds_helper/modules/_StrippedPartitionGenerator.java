@@ -27,7 +27,7 @@ public class _StrippedPartitionGenerator implements Serializable{
 
     public _StrippedPartitionGenerator(Long2ObjectOpenHashMap<_TupleEquivalenceClassRelation> relationships) {
 
-        this.relationships = relationships;
+        _StrippedPartitionGenerator.relationships = relationships;
 
     }
 
@@ -48,14 +48,14 @@ public class _StrippedPartitionGenerator implements Serializable{
                 Row row = tuple._1();
                 
                 _TupleEquivalenceClassRelation relation = new _TupleEquivalenceClassRelation();
-                this.relationships.put(tuple._2, relation);
+                relationships.putIfAbsent(tuple._2, relation);
 
                 //System.out.println("PUT entry: "+tuple._2+" -> "+this.relationships.get(tuple._2));
                 for (int i = 0; i < input.numberOfColumns(); i++) {
                     String value = row.getString(i);
 
                     LongArrayList l = new LongArrayList();  
-                    l.add(tuple._2);
+                    l.add((long) tuple._2);
                     entities.add(new Tuple2<>(new Tuple2<>(i, value), l));
 
                 }
@@ -83,14 +83,14 @@ public class _StrippedPartitionGenerator implements Serializable{
             .mapToPair(tuple -> {
                 _StrippedPartitionSpark sp = new _StrippedPartitionSpark(tuple._2);
 
-                BitSet att = new BitSet();
-                att.set(tuple._1);
+                //BitSet att = new BitSet();
+                //att.set(tuple._1);
                 //System.out.println("#entries = "+this.relationships.keySet().size());
                 for (int partitionID = 0; partitionID < tuple._2.size(); partitionID++) {
                     
                     for (long rowID : tuple._2.get(partitionID)) {
                         // add new relationship -> rowID is in SP with index partitionID for tuple._1 attribute
-                        this.relationships.get(rowID).addNewRelationship(tuple._1, partitionID);
+                        relationships.get(rowID).addNewRelationship(tuple._1, partitionID);
                     }
                 
                 }                

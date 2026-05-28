@@ -64,11 +64,10 @@ public class _FindCoversGenerator implements Serializable{
      * Executes functional dependency discovery from a given RDD of {@link _DifferenceSet difference sets}.
      *
      * @param differenceSets {@link JavaRDD} of {@link _DifferenceSet} representing differences between tuples.
-     * @return List of {@link _FunctionalDependencyGroup} representing discovered minimal FDs.
      */
-    public List<_FunctionalDependencyGroup> execute(JavaRDD<_DifferenceSet> differenceSets) {
+    public void execute(JavaRDD<_DifferenceSet> differenceSets) {
 
-        List<_FunctionalDependencyGroup> result = new LinkedList<>();
+        //List<_FunctionalDependencyGroup> result = new LinkedList<>();
         
         differenceSets
             // generate entries <attribute A, <DIFF without A, is DIFF NOT empty>>
@@ -104,7 +103,7 @@ public class _FindCoversGenerator implements Serializable{
                 diff.addAll(y._1);
                 return new Tuple2<>(diff, x._2 && y._2);
             })
-            // filter only TRUE values -> list does NOT contain empty DIFF set
+            // filter only TRUE values -> list does NOT contain empty DIFF se
             .filter(x -> x._2._2)
             .foreach(tuple -> {
                 
@@ -112,16 +111,13 @@ public class _FindCoversGenerator implements Serializable{
                    // System.out.println("FIND_GEN: emptySet -> A");
                     this.addFdToReceivers(new _FunctionalDependencyGroup(tuple._1, new IntArrayList()));
                 } else {
-                    List<_DifferenceSet> copy = new LinkedList<>();
-                    copy.addAll(tuple._2._1);
-                    this.doRecusiveCrap(tuple._1, this.generateInitialOrdering(tuple._2._1), copy, new IntArrayList(), tuple._2._1,
-                            result);
-                   // System.out.println("FIND_GEN: did recursive crap");
+                    List<_DifferenceSet> copy = new LinkedList<>(tuple._2._1);
+                    this.doRecusiveCrap(tuple._1, this.generateInitialOrdering(tuple._2._1), copy, new IntArrayList(), tuple._2._1
+                           /*, result*/);
+                    // System.out.println("FIND_GEN: did recursive crap");
                     //System.out.println("---------------------------------------------------------------------");
                 }
             });
-
-        return result;
 
     }
 
@@ -149,20 +145,8 @@ public class _FindCoversGenerator implements Serializable{
                 lastIndex = ds.getAttributes().nextSetBit(lastIndex + 1);
             }
         }
-        
-        TreeSet<Tuple2<Integer, Integer>> ordering = new TreeSet<>(new OrderingComparator());
-        
-        for (int key : counting.keySet()){
-            ordering.add(new Tuple2<>(key, counting.get(key)));
-        }
-        
-        if (!ordering.isEmpty() && ordering.first()._2 == 0) return result;
-        
-        for (Tuple2<Integer, Integer> att : ordering) {
-            result.add(att._1);
-        }
 
-        return result;
+        return getIntegers(result, counting);
     }
 
     /**
@@ -173,10 +157,10 @@ public class _FindCoversGenerator implements Serializable{
      * @param setsNotCovered {@link List} Remaining difference sets not yet covered.
      * @param currentPath {@link IntList} Current LHS path being constructed.
      * @param originalDiffSet {@link List} Original difference sets for minimality check.
-     * @param result {@link List} to collect discovered {@link _FunctionalDependencyGroup}.
+     * //@param result {@link List} to collect discovered {@link _FunctionalDependencyGroup}.
      */
     private void doRecusiveCrap(int currentAttribute, IntList currentOrdering, List<_DifferenceSet> setsNotCovered,
-                                IntList currentPath, List<_DifferenceSet> originalDiffSet, List<_FunctionalDependencyGroup> result) {
+                                IntList currentPath, List<_DifferenceSet> originalDiffSet/*, List<_FunctionalDependencyGroup> result*/) {
 
         if (!currentOrdering.isEmpty() && /* BUT */setsNotCovered.isEmpty()) {
             //if (this.debugSysout)
@@ -191,7 +175,7 @@ public class _FindCoversGenerator implements Serializable{
             if (this.noOneCovers(subSets, originalDiffSet)) {
                 _FunctionalDependencyGroup fdg = new _FunctionalDependencyGroup(currentAttribute, currentPath);
                 this.addFdToReceivers(fdg);
-                result.add(fdg);
+                //result.add(fdg);
                 //System.out.println("FIND_GEN: recursive crap -> IF C");
             } else {
                 /*if (this.debugSysout) {
@@ -215,7 +199,7 @@ public class _FindCoversGenerator implements Serializable{
             IntList nextOrdering = this.generateNextOrdering(next, currentOrdering, currentOrdering.getInt(i));
             IntList currentPathCopy = new IntArrayList(currentPath);
             currentPathCopy.add(currentOrdering.getInt(i));
-            this.doRecusiveCrap(currentAttribute, nextOrdering, next, currentPathCopy, originalDiffSet, result);
+            this.doRecusiveCrap(currentAttribute, nextOrdering, next, currentPathCopy, originalDiffSet/*, result*/);
         }
 
     }
@@ -254,17 +238,22 @@ public class _FindCoversGenerator implements Serializable{
                 }
             }
         }
-        
+
+        return getIntegers(result, counting);
+    }
+
+    private IntList getIntegers(IntList result, Int2IntMap counting) {
+
         TreeSet<Tuple2<Integer, Integer>> ordering = new TreeSet<>(new OrderingComparator());
-        
+
         for (int key : counting.keySet()){
             ordering.add(new Tuple2<>(key, counting.get(key)));
         }
-        
+
         if (!ordering.isEmpty() && ordering.first()._2 == 0) return result;
-        
-        for (Tuple2<Integer, Integer> att : ordering) {            
-            result.add(att._1);
+
+        for (Tuple2<Integer, Integer> att : ordering) {
+            result.add((int) att._1);
         }
 
         return result;
@@ -349,7 +338,7 @@ public class _FindCoversGenerator implements Serializable{
      */
     private List<BitSet> generateSubSets(IntList currentPath) {
 
-        List<BitSet> result = new LinkedList<BitSet>();
+        List<BitSet> result = new LinkedList<>();
 
         BitSet obs = new BitSet();
         for (int i : currentPath) {

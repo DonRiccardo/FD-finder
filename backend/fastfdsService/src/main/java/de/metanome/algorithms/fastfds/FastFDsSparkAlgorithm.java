@@ -46,7 +46,6 @@ public class FastFDsSparkAlgorithm implements Serializable{
 
         new _FindCoversGenerator(input, maxLhs).execute(diff);
 
-
     }
 
     
