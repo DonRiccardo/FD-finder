@@ -112,7 +112,7 @@ public class _FindCoversGenerator implements Serializable{
                     this.addFdToReceivers(new _FunctionalDependencyGroup(tuple._1, new IntArrayList()));
                 } else {
                     List<_DifferenceSet> copy = new LinkedList<>(tuple._2._1);
-                    this.doRecusiveCrap(tuple._1, this.generateInitialOrdering(tuple._2._1), copy, new IntArrayList(), tuple._2._1
+                    this.doRecusive(tuple._1, this.generateInitialOrdering(tuple._2._1), copy, new IntArrayList(), tuple._2._1
                            /*, result*/);
                     // System.out.println("FIND_GEN: did recursive crap");
                     //System.out.println("---------------------------------------------------------------------");
@@ -159,8 +159,8 @@ public class _FindCoversGenerator implements Serializable{
      * @param originalDiffSet {@link List} Original difference sets for minimality check.
      * //@param result {@link List} to collect discovered {@link _FunctionalDependencyGroup}.
      */
-    private void doRecusiveCrap(int currentAttribute, IntList currentOrdering, List<_DifferenceSet> setsNotCovered,
-                                IntList currentPath, List<_DifferenceSet> originalDiffSet/*, List<_FunctionalDependencyGroup> result*/) {
+    private void doRecusive(int currentAttribute, IntList currentOrdering, List<_DifferenceSet> setsNotCovered,
+                            IntList currentPath, List<_DifferenceSet> originalDiffSet/*, List<_FunctionalDependencyGroup> result*/) {
 
         if (!currentOrdering.isEmpty() && /* BUT */setsNotCovered.isEmpty()) {
             //if (this.debugSysout)
@@ -199,7 +199,7 @@ public class _FindCoversGenerator implements Serializable{
             IntList nextOrdering = this.generateNextOrdering(next, currentOrdering, currentOrdering.getInt(i));
             IntList currentPathCopy = new IntArrayList(currentPath);
             currentPathCopy.add(currentOrdering.getInt(i));
-            this.doRecusiveCrap(currentAttribute, nextOrdering, next, currentPathCopy, originalDiffSet/*, result*/);
+            this.doRecusive(currentAttribute, nextOrdering, next, currentPathCopy, originalDiffSet/*, result*/);
         }
 
     }
