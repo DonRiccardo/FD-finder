@@ -4,7 +4,7 @@ COPY pom.xml .
 COPY src ./src
 RUN mvn clean package
 
-FROM openjdk:21
+FROM eclipse-temurin:21
 WORKDIR /tmp
 ARG JAR_FILE=target/depminerService-0.0.1-SNAPSHOT.jar
 COPY --from=build /app/${JAR_FILE} app.jar

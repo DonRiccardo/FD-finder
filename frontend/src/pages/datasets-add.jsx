@@ -6,7 +6,7 @@ import {
   InputAdornment, FormControl, FormControlLabel, 
   FormLabel, InputLabel,
 } from "@mui/material";
-
+import Papa from "papaparse";
 import CheckIcon from '@mui/icons-material/Check';
 import CloseIcon from '@mui/icons-material/Close';
 import { Navigate } from "react-router-dom";
@@ -136,7 +136,13 @@ export default function DatasetsAddPage(){
         }
 
         setRawRows(rows);
-        setPreview(rows.map((row) => row.split(",")));
+
+        const parseResult = Papa.parse(rows.join("\n"), {
+            delimiter: delim,
+            skipEmptyLines: true,
+        });
+
+        setPreview(parseResult.data);
 
     }
 
@@ -333,7 +339,10 @@ export default function DatasetsAddPage(){
                             value={delim}
                             label="Delimiter"
                             onChange={(e) => {setDelim(e.target.value);
-                                setPreview(rawRows.map((row) => row.split(e.target.value)));
+                                setPreview(Papa.parse(rawRows.join("\n"), {
+                                    delimiter: e.target.value,
+                                    skipEmptyLines: true,
+                                }).data);
                             }}
                         />
                         </FormControl>

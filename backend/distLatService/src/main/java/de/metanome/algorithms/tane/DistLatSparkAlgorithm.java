@@ -60,6 +60,8 @@ public class DistLatSparkAlgorithm implements Serializable{
      * <strong>Example</strong> LVL: AB, generated {@link _StrippedPartitionSpark} for ABC (FD AB->C was checked) => store partition of ABC
      */
     private Map<BitSet, _StrippedPartitionSpark> newGeneratedPartitions = null;
+
+    private static Map<BitSet, _StrippedPartitionSpark> computedPartitions = null;
     
     public DistLatSparkAlgorithm(_Input input, int maxLhs, JavaSparkContext context){
         DistLatSparkAlgorithm.input = input;
@@ -92,22 +94,6 @@ public class DistLatSparkAlgorithm implements Serializable{
     public void execute() {
         
         loadData();
-        
-        // Initialize Level 0
-        /*
-        CombinationHelperSpark chLevel0 = new CombinationHelperSpark();
-        BitSet rhsCandidatesLevel0 = new BitSet();
-        rhsCandidatesLevel0.set(0, numberAttributes);
-        chLevel0.setRhsCandidates(rhsCandidatesLevel0);
-        BitSet latticeBuildingLevel0 = new BitSet();
-        latticeBuildingLevel0.set(0, numberAttributes);
-        chLevel0.setLatticeBuilding(latticeBuildingLevel0);
-        _StrippedPartitionSpark spLevel0 = new _StrippedPartitionSpark(numberTuples);
-        chLevel0.setPartition(spLevel0);
-        spLevel0 = null;
-        ArrayList<Tuple2<BitSet, CombinationHelperSpark>> listLVL0 = new ArrayList<>();
-        listLVL0.add(new Tuple2<>(new BitSet(), chLevel0));
-        */
 
         ArrayList<Tuple2<BitSet, CombinationHelperSpark>> listLVL1 = new ArrayList<>();
         for (BitSet bs : attributeSet){
@@ -126,7 +112,7 @@ public class DistLatSparkAlgorithm implements Serializable{
 
             lastGeneratedPartitions = newGeneratedPartitions;
             newGeneratedPartitions = new HashMap<>();
-
+            computedPartitions = new  HashMap<>();
             computeLatticeLevel(canSkipLvls);
 
             l += canSkipLvls;
@@ -149,6 +135,7 @@ public class DistLatSparkAlgorithm implements Serializable{
         //this.lastGeneratedPartitions.put(new BitSet(), new _StrippedPartitionSpark(this.numberTuples));
         this.newGeneratedPartitions = new HashMap<>();
         this.newGeneratedPartitions.put(new BitSet(), new _StrippedPartitionSpark(this.numberTuples));
+        DistLatSparkAlgorithm.computedPartitions = new HashMap<>();
 
         if (startLatticeLevel > 0){
             // create combinations of attributes for specified LVL
@@ -204,6 +191,8 @@ public class DistLatSparkAlgorithm implements Serializable{
         for (int A = bitsToMultiply.nextSetBit(0); A >= 0; A = bitsToMultiply.nextSetBit(A + 1)) {
 
             spToReturn = multiply(spToReturn, plisMap.get(A));
+            keyInMap.set(A);
+            DistLatSparkAlgorithm.computedPartitions.put((BitSet) keyInMap.clone(), spToReturn);
         }
 
         return spToReturn;
@@ -230,7 +219,6 @@ public class DistLatSparkAlgorithm implements Serializable{
                     return tuple;
                 })
                 // generate next lattice level
-                // add SP to newGeneratedPartitions
                 .flatMapToPair((tuple) -> {
                     Set<BitSet> combinations = new HashSet<>();
                     List<Tuple2<BitSet, CombinationHelperSpark>> listLVL = new ArrayList<>();
@@ -277,7 +265,9 @@ public class DistLatSparkAlgorithm implements Serializable{
      */
     private void findFunctionalDependencies(BitSet attributes, CombinationHelperSpark comhelp){
 
-        Map<BitSet, _StrippedPartitionSpark> computedPartitions = new HashMap<>();
+        //Map<BitSet, _StrippedPartitionSpark> computedPartitions = new HashMap<>();
+
+        //System.out.println("IN: " + attributes + " RHSC: " +  comhelp.getRhsCandidates());
 
         BitSet X = (BitSet) attributes.clone();
         BitSet rhsc = (BitSet) comhelp.getRhsCandidates().clone();
@@ -293,9 +283,9 @@ public class DistLatSparkAlgorithm implements Serializable{
 
             if (SPwithoutA.getError() == combinedSP.getError()){
                 // found a FD X->A
-
+                //System.out.println("FOUND fd: "+ A);
                 rhsc.clear(A);
-                findMininalFunctionalDependencyFromOriginal(attributes, A, computedPartitions);
+                findMininalFunctionalDependencyFromOriginal(attributes, A);
             }
 
         }
@@ -327,18 +317,17 @@ public class DistLatSparkAlgorithm implements Serializable{
      * Compute {@link _StrippedPartitionSpark} for specified {@link BitSet}.
      * SP is obtained from {@code computedPartitions} if was already computed otherwise is computed and added to {@code computedPartitions}.
      * @param b {@link BitSet} of which we compute SP
-     * @param computedPartitions {@link Map} of already computed SP
      * @return computed {@link _StrippedPartitionSpark}
      */
-    private _StrippedPartitionSpark getStrippedPartitionFromCalculated(BitSet b, Map<BitSet, _StrippedPartitionSpark> computedPartitions){
+    private _StrippedPartitionSpark getStrippedPartitionFromCalculated(BitSet b){
 
-        if (computedPartitions.containsKey(b)){
+        if (DistLatSparkAlgorithm.computedPartitions.containsKey(b)){
 
-            return computedPartitions.get(b);
+            return DistLatSparkAlgorithm.computedPartitions.get(b);
         }
 
         _StrippedPartitionSpark sp = computeStrippedPartition(b);
-        computedPartitions.put(b, sp);
+        DistLatSparkAlgorithm.computedPartitions.put(b, sp);
         return sp;
     }
 
@@ -346,9 +335,9 @@ public class DistLatSparkAlgorithm implements Serializable{
      * From LHS->RHS as an original valid FD, find all valid minimal FDs and add them to the result.
      * @param lhs {@link BitSet} LHS of a valid FD
      * @param rhs {@link BitSet} RHS of a valid FD
-     * @param computedPartitions {@link Map} of already computed {@link _StrippedPartitionSpark}
+     *
      */
-    private void findMininalFunctionalDependencyFromOriginal(BitSet lhs, int rhs, Map<BitSet, _StrippedPartitionSpark> computedPartitions){
+    private void findMininalFunctionalDependencyFromOriginal(BitSet lhs, int rhs){
 
         Set<BitSet> lastValidFDsLHS = new HashSet<>();
         lastValidFDsLHS.add(lhs);
@@ -361,11 +350,13 @@ public class DistLatSparkAlgorithm implements Serializable{
 
             Tuple2<BitSet, BitSet>  element = lhsToCheckForMinimality.poll();
 
+            //System.out.println("DOWN: " + element._1 + "->" + rhs);
+
             BitSet XwithA = (BitSet) element._1.clone();
             XwithA.set(rhs);
 
-            _StrippedPartitionSpark SPX = getStrippedPartitionFromCalculated(element._1, computedPartitions);
-            _StrippedPartitionSpark SPXwithA = getStrippedPartitionFromCalculated(XwithA, computedPartitions);
+            _StrippedPartitionSpark SPX = getStrippedPartitionFromCalculated(element._1);
+            _StrippedPartitionSpark SPXwithA = getStrippedPartitionFromCalculated(XwithA);
 
             if (SPX.getError() == SPXwithA.getError()){
 
