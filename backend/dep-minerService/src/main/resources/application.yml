@@ -3,4 +3,7 @@ spring:
     name: algservice-depminer
 server:
   port: 8084
-
+eureka:
+  client:
+    jersey:
+      enabled: false

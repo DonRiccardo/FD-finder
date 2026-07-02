@@ -3,4 +3,7 @@ spring:
     name: algservice-distlat
 server:
   port: 8088
-
+eureka:
+  client:
+    jersey:
+      enabled: false

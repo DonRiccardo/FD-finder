@@ -3,4 +3,7 @@ spring:
     name: algservice-fastfds
 server:
   port: 8085
-
+eureka:
+  client:
+    jersey:
+      enabled: false

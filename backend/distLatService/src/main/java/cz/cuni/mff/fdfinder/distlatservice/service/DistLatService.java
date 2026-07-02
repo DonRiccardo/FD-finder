@@ -129,7 +129,7 @@ public class DistLatService {
             try {
                 System.out.println("DISTLAT - STARTING JOB: " + job.getId());
                 this.actualSparkGroupId = getSparkContextGroupId(job.getId());
-                sparkContext.setJobGroup(this.actualSparkGroupId, "TANE spark new job", true);
+                sparkContext.setJobGroup(this.actualSparkGroupId, "DistLat spark new job", true);
                 runJob(currentJob);
             }
             catch (Throwable t) {

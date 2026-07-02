@@ -250,7 +250,7 @@ public class DistLatSparkAlgorithm implements Serializable{
                 })
                 .reduceByKey((x, y) -> {
                     BitSet newRHSC = (BitSet) x.getRhsCandidates().clone();
-                    newRHSC.and(y.getRhsCandidates());
+                    newRHSC.or(y.getRhsCandidates());
 
                     x.setRhsCandidates(newRHSC);
                     return x;
@@ -303,7 +303,7 @@ public class DistLatSparkAlgorithm implements Serializable{
     private void createAddOneAttributeSmallerLhsToQueue(BitSet lhs, Queue<Tuple2<BitSet, BitSet>> lhsToCheck){
 
         BitSet b = (BitSet)  lhs.clone();
-        b.clear(lhs.nextSetBit(0));
+        //b.clear(lhs.nextSetBit(0));
         if (lastGeneratedPartitions.containsKey(b)){ return;}
 
         for (int A = lhs.nextSetBit(0); A >= 0; A = lhs.nextSetBit(A+1)) {
@@ -361,7 +361,7 @@ public class DistLatSparkAlgorithm implements Serializable{
             if (SPX.getError() == SPXwithA.getError()){
 
                 lastValidFDsLHS.remove(element._2);
-                lastValidFDsLHS.add(element._1);
+                if (!lastGeneratedPartitions.containsKey(element._1)) lastValidFDsLHS.add(element._1);
 
                 createAddOneAttributeSmallerLhsToQueue(element._1, lhsToCheckForMinimality);
             }

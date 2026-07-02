@@ -3,4 +3,7 @@ spring:
     name: algservice-hyfd
 server:
   port: 8086
-
+eureka:
+  client:
+    jersey:
+      enabled: false
